@@ -15,3 +15,5 @@ print('this was modified locally')
 
 # modified in a new branch
 print('new bracnh modification')
+
+print('modification in b1 branch')
