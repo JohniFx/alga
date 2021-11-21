@@ -10,7 +10,7 @@ class Analyser():
         self.logger = logging.getLogger('bot.analyser')
 
     # referencing an issue
-    # closing
+    # closing again
     def get_candles(self, inst, count=15, timeframe='M5'):
         params = dict(
             price='MBA',
