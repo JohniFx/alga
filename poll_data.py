@@ -43,7 +43,6 @@ class TradeManager():
             nav_pc = f'{(t.unrealizedPL / nav):.5f}'
             if t.unrealizedPL < min(self.max_loss):
                 self.max_loss.append(t.unrealizedPL)
-   
             if t.currentUnits == t.initialUnits and t.unrealizedPL <= -(nav * 0.0001):
                 mark = f'L1'# <= {-(nav * 0.0001):.4f}'
             if t.currentUnits <= t.initialUnits and t.unrealizedPL <= -(nav * 0.0002):
@@ -62,7 +61,6 @@ class TradeManager():
                 mark = 'P4'  # > {nav * 0.0003:.4f}'
             if t.realizedPL > 0 and t.unrealizedPL > (nav * 0.0005):
                 mark = 'P5+'  # > {nav * 0.0003:.4f}'
-                
             rpl = '' if t.realizedPL == 0 else str(round(t.realizedPL, 4))
             print(
                 f'{t.id}'
@@ -73,7 +71,6 @@ class TradeManager():
                 + f' {rpl:>8}'
                 + f' {nav_pc:>8}'
                 + f' {mark:<20}')
-            
 
     def get_account(self) -> None:
         response = self.ctx.account.get(self.accountid)
@@ -150,4 +147,4 @@ if __name__ == '__main__':
     try:
         tm = TradeManager(ctx)
     except KeyboardInterrupt as ke:
-        sys.exit(0)  
+        sys.exit(0)

@@ -169,7 +169,7 @@ class Analyser():
             return -1
         else:
             return 0
-    
+
     def get_signal(self, inst, count=15, tf='M5'):
         df = self.get_candles(inst, count, tf)
 
@@ -197,7 +197,7 @@ class Analyser():
             tmp = signal2
         else:
             tmp = signal1
-        
+
         signal_pivoted = self.is_trade_allowed_by_pivot(
             inst, df.mid_c.iloc[-1], tmp)
 
