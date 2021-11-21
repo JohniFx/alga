@@ -9,6 +9,7 @@ class Analyser():
         self.ctx = ctx
         self.logger = logging.getLogger('bot.analyser')
 
+    # referencing an issue
     def get_candles(self, inst, count=15, timeframe='M5'):
         params = dict(
             price='MBA',
