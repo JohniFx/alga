@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import json
 import logging
+from time import sleep
 
 
 class Analyser():
@@ -9,8 +10,6 @@ class Analyser():
         self.ctx = ctx
         self.logger = logging.getLogger('bot.analyser')
 
-    # referencing an issue
-    # closing again
     def get_candles(self, inst, count=15, timeframe='M5'):
         params = dict(
             price='MBA',
@@ -153,67 +152,62 @@ class Analyser():
         df['hilo'] = np.where(((df.lows > 0) & (df.highs > 0)), 1, 0)
         df['hilo'] = np.where(((df.lows < 0) & (df.highs < 0)), -1, df['hilo'])
 
-    @staticmethod
-    def apply_signal(row):
-        c1 = row.hilo > 0
-        c2 = row.mom_pos > 0
-        c3 = row.mom_slope > 0
-        c4 = row.lr_slope > 0
-
-        c5 = row.hilo < 0
-        c6 = row.mom_pos < 0
-        c7 = row.mom_slope < 0
-        c8 = row.lr_slope < 0
-
-        if c1 and c2 and c3 and c4:
-            return 1
-        elif c5 and c6 and c7 and c8:
-            return -1
-        else:
-            return 0
+    def add_stochastic(self, df, window=10, roll=3):
+        hi = df.mid_h.rolling(window).max()
+        lo = df.mid_l.rolling(window).min()
+        df['STO_K'] = (df.mid_c - lo)*100/(hi - lo)
+        df['STO_D'] = df['STO_K'].rolling(roll).mean()
 
     def get_signal(self, inst, count=15, tf='M5'):
         df = self.get_candles(inst, count, tf)
-
         self.add_hilo(df)
         self.add_mom(df)
         self.add_kpi(df, inst)
+        self.add_stochastic(df, 10, 3)
 
-        # signal conditions
+        # Strategy1
         cd1 = (df.hilo > 0) & (df.mom_pos > 0) & (df.mom_slope > 0) & (df.lr_slope > 0)
         cd2 = (df.hilo < 0) & (df.mom_pos < 0) & (df.mom_slope < 0) & (df.lr_slope < 0)
         df['signal'] = np.where(cd1, 1, 0)
         df['signal'] = np.where(cd2, -1, df['signal'])
         signal1 = df.signal.iloc[-1]
 
-        # Buy condition
+        # Strategy2
         c1 = (df.mom < df.mom_q05) & (df.mom_slope > 0) & (df.mom_slope.shift(1) > 0)
         c2 = (df.mom > df.mom_q95) & (df.mom_slope < 0) & (df.mom_slope.shift(1) < 0)
         df['signal2'] = np.where(c1, 1, 0)
         df['signal2'] = np.where(c2, -1, df['signal2'])
         signal2 = df.signal2.iloc[-1]
 
-        df['signal3'] = df.apply(self.apply_signal, axis=1)
+        # Strategy3
+        sc1 = (df.STO_K > 85) & (df.lr_slope < 0)
+        sc2 = (df.STO_K < 15) & (df.lr_slope > 0)
+        df['signal_stoch'] = np.where(sc1, -1, 0)
+        df['signal_stoch'] = np.where(sc2, 1, df['signal_stoch'] )
+        signal3 = df.signal_stoch.iloc[-1]
+
+        signals = dict(
+            inst=inst,
+            signal1=signal1,
+            signal2=signal2,
+            signal3=signal3,
+            lrg=df.lr_slope.iloc[-1],
+            stc=df.STO_K.iloc[-1].round(2)
+        )
+
+        print(signals)
+        if (signal1 == signal2) and (signal2 == signal3) and (signal3 == df.lr_slope.iloc[-1]):
+            print('** supersignal **')
+            return signal1, 'XL'
 
         if signal2 != 0:
-            tmp = signal2
-        else:
-            tmp = signal1
+            return signal2, 'S2'
+        if signal1 != 0:
+            return signal1, 'S1'
+        if signal3 != 0:
+            return signal3, 'S3'
 
-        signal_pivoted = self.is_trade_allowed_by_pivot(
-            inst, df.mid_c.iloc[-1], tmp)
-
-        if df.mom.iloc[-1] < df.mom_q05.iloc[-1] or df.mom.iloc[-1] > df.mom_q95.iloc[-1]:
-            signaldata = dict(
-                inst=inst,
-                mom=df.mom.iloc[-1].round(5),
-                ql=df.mom_q05.iloc[-1],
-                qh=df.mom_q95.iloc[-1],
-                signal=signal_pivoted)
-            print(f'{signaldata}')
-            print(df.iloc[-5:, -8:])
-
-        return signal_pivoted
+        return 0, ''
 
 
 if __name__ == "__main__":
@@ -223,6 +217,4 @@ if __name__ == "__main__":
     ctx = v20.Context(hostname=defs.HOSTNAME, token=defs.key)
     ctx.set_header(key='Authorization', value=defs.key)
     a = Analyser(ctx)
-    # print(a.get_kpi_dict('EUR_GBP'))
-    # print(a.pivot_points('EUR_GBP', count=2, tf='D'))
-    a.get_signal('EUR_USD')
+    a.get_signal('AUD_JPY')
