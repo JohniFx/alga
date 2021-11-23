@@ -3,7 +3,6 @@ import utils as u
 import analyser
 import datetime
 import logging
-import os
 import threading
 
 
@@ -20,7 +19,7 @@ class Manager():
         be_pip = defs.global_params['be_pip'] * piploc
         MINWIN = 3 * piploc
 
-        ts_dist = 2*defs.global_params['ts'] * \
+        ts_dist = 1.5*defs.global_params['ts'] * \
             u.get_piplocation(t.instrument, self.insts)
         prec = u.get_displayprecision(t.instrument, self.insts)
 
@@ -100,7 +99,6 @@ class Manager():
         bid = p.closeoutBid
         ask = p.closeoutAsk
         spread_normal = spread / u.get_piplocation(inst, self.insts)
-        
 
         if spread_normal > defs.global_params['max_spread']:
             print(f'wide spread on {inst} {signaltype} {spread_normal:.1f} (max: {defs.global_params["max_spread"]})')
@@ -209,6 +207,14 @@ class Manager():
         for t in trades:
             if t.unrealizedPL > 0:
                 self.ctx.trade.close(self.accountid, t.id, units='ALL')
+
+    def realize_profit(self, ratio=.5):
+        trades = self.ctx.trade.list_open(self.accountid).get('trades')
+        for t in trades:
+            if t.unrealizedPL > 0:
+                units_to_close = str(int(t.units * ratio))
+                self.ctx.trade.close(self.accountid, t.id, units=units_to_close)
+                print(f'realisation:{t.instrument}{t.units_to_close}{ratio}')
 
 
 if __name__ == "__main__":

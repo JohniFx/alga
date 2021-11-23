@@ -186,11 +186,19 @@ class Analyser():
         df['signal_stoch'] = np.where(sc2, 1, df['signal_stoch'] )
         signal3 = df.signal_stoch.iloc[-1]
 
+        # Strategy4
+        cd1 = (df.hilo > 0) & (df.mom_pos < 0) & (df.mom_slope > 0) & (df.lr_slope > 0)
+        cd2 = (df.hilo < 0) & (df.mom_pos > 0) & (df.mom_slope < 0) & (df.lr_slope < 0)
+        df['s4'] = np.where(cd1, 1, 0)
+        df['s4'] = np.where(cd2, -1, df['s4'])
+        s4 = df.s4.iloc[-1]
+
         signals = dict(
             inst=inst,
-            signal1=signal1,
-            signal2=signal2,
-            signal3=signal3,
+            s1=signal1,
+            s2=signal2,
+            s3=signal3,
+            s4=s4,
             lrg=df.lr_slope.iloc[-1],
             stc=df.STO_K.iloc[-1].round(2)
         )
@@ -200,12 +208,14 @@ class Analyser():
             print('** supersignal **')
             return signal1, 'XL'
 
-        if signal2 != 0:
-            return signal2, 'S2'
-        if signal1 != 0:
-            return signal1, 'S1'
         if signal3 != 0:
             return signal3, 'S3'
+        if signal2 != 0:
+            return signal2, 'S2'
+        if s4 != 0:
+            return s4, 'S4'
+        if signal1 != 0:
+            return signal1, 'S1'
 
         return 0, ''
 
