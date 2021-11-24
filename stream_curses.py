@@ -9,6 +9,8 @@ from time import sleep
 ctxs = v20.Context(hostname='stream-fxpractice.oanda.com', token=defs.key)
 ctxs.set_header(key='Authorization', value=defs.key)
 insts = ",".join(defs.instruments)
+pricetable = {}
+
 
 def curses_main(w):
     w.addstr("Streaming prices in terminal by Jano~~\n")
@@ -20,14 +22,52 @@ def curses_main(w):
     process_data(w)
 
 
+def set_price_table(inst, bid, ask):
+    if inst in pricetable:
+        bidbase = pricetable[inst]['bid_base']
+        askbase = pricetable[inst]['ask_base']
+        bidchange = bid-bidbase
+        askchange = ask-askbase
+        count = pricetable[inst]['count']+1
+        spread = ask-bid
+
+        pricetable[inst] = dict(
+            bid_base=bidbase,
+            ask_base=askbase,
+            bid=bid,
+            ask=ask,
+            count=count,
+            bidchange=bidchange,
+            askchange=askchange,
+            spread = spread
+        )
+    else:
+        spread = ask-bid
+        pricetable[inst] = dict(
+            bid_base=bid,
+            ask_base=ask,
+            bid=bid,
+            ask=ask,
+            count=1,
+            bidchange=0,
+            askchange=0,
+            spread=spread
+        )
+
+
 def process_data(w):
     response = ctxs.pricing.stream(defs.ACCOUNT_ID, instruments=insts)
     for typ, data in response.parts():
         if typ == "pricing.ClientPrice":
+            set_price_table(data.instrument,
+                            data.bids[0].price, data.asks[0].price)
             dtime = parser.parse(data.time).strftime("%H:%M:%S")
             spread = data.asks[0].price-data.bids[0].price
 
-            prc = f"{data.instrument} {dtime} {data.bids[0].price:>9.4f}/{data.asks[0].price:>9.4f}"
+            prc = f'{data.instrument} {dtime}'
+            prc += f' {data.bids[0].price:>9.4f}/{data.asks[0].price:>9.4f}'
+            prc += f' {pricetable[data.instrument]["count"]:>5}'
+            prc += f' {pricetable[data.instrument]["bidchange"]:>9.4f}'
 
             for i, inst in zip(range(2, len(defs.instruments)+2), defs.instruments):
                 if data.instrument == inst:
@@ -35,7 +75,7 @@ def process_data(w):
                     limit = 0.0002
                     if inst.endswith('JPY'):
                         limit = 0.02
-                    show_spread(w, i, 40, spread, limit)
+                    show_spread(w, i, 55, spread, limit)
             w.refresh()
 
 
@@ -49,9 +89,8 @@ def show_spread(w, row: int, col: int, spread: float, limit: float):
 if __name__ == ('__main__'):
     try:
         curses.wrapper(curses_main)
-    except KeyboardInterrupt as ke:
+    except KeyboardInterrupt:
         sys.exit(0)
-    except Exception as ex:
+    except Exception:
         sleep(10)
         os.execv(sys.executable, ['python3'] + sys.argv)
-    

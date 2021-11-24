@@ -7,12 +7,15 @@ import threading
 
 
 class Manager():
-    def __init__(self, ctx, accountid) -> None:
+    def __init__(self, ctx, accountid, run_stream=False) -> None:
         self.ctx = ctx
         self.accountid = accountid
         self.insts = u.load_instruments()
         self.a = analyser.Analyser(self.ctx)
         self.logger = logging.getLogger('bot.manager')
+        self.pricetable = {}
+        if run_stream:
+            threading.Thread(target=self.run_pricestream).start()
 
     def move_stop_breakeven(self, t) -> None:
         piploc = u.get_piplocation(t.instrument, self.insts)
@@ -58,8 +61,6 @@ class Manager():
         self.close_trade(t.id, int(abs(t.currentUnits)/5))
 
     def check_instruments(self):
-        # os.system('clear')
-
         print(f'{u.get_now()}')
         trades = self.ctx.trade.list_open(self.accountid).get('trades')
         trades.sort(key=lambda x: (x.instrument, x.price))
@@ -79,25 +80,21 @@ class Manager():
                             target=self.check_instrument, args=[i, -1]).start()
 
     def check_instrument(self, inst, positioning=None) -> str:
-        # signal_htf = self.a.get_signal(inst, tf='M15')
-        # if signal_htf == 0:
-        #     return
-
-        # analysis
         signal, signaltype = self.a.get_signal(inst, tf='M5')
-        # if signal_htf != signal:
-        #     return
 
         valid = [(-1, -1), (-1, 0), (1, 0), (1, 1)]
         if (signal, positioning) not in valid:
             return None
 
-        # current prices
-        p = self.ctx.pricing.get(
-            self.accountid, instruments=inst).get('prices')[0]
-        spread = p.closeoutAsk-p.closeoutBid
-        bid = p.closeoutBid
-        ask = p.closeoutAsk
+        print(f' stream:{inst}'
+              + f' B:{self.pricetable[inst]["bid"]:>8.5}'
+              + f' A:{self.pricetable[inst]["ask"]:>8.5}'
+              + f' S:{self.pricetable[inst]["spread"]:.5f}'
+              + f' C:{self.pricetable[inst]["count"]:>5}')
+
+        spread = self.pricetable[inst]["spread"]
+        bid = self.pricetable[inst]["bid"]
+        ask = self.pricetable[inst]["ask"]
         spread_normal = spread / u.get_piplocation(inst, self.insts)
 
         if spread_normal > defs.global_params['max_spread']:
@@ -200,7 +197,6 @@ class Manager():
         else:
             self.ctx.trade.close(self.accountid, tradeid, units=str(units))
             msg = f'partial profit: tradeid:{tradeid} unit:{units}'
-            self.logger.info(msg)
 
     def close_winners(self):
         trades = self.ctx.trade.list_open(self.accountid).get('trades')
@@ -212,9 +208,53 @@ class Manager():
         trades = self.ctx.trade.list_open(self.accountid).get('trades')
         for t in trades:
             if t.unrealizedPL > 0:
-                units_to_close = str(int(t.units * ratio))
+                units_to_close = str(abs(int(t.currentUnits * ratio)))
                 self.ctx.trade.close(self.accountid, t.id, units=units_to_close)
-                print(f'realisation:{t.instrument}{t.units_to_close}{ratio}')
+                print(f'realisation:{t.instrument} {units_to_close} R:{ratio}')
+    
+    def set_price_table(self, inst, bid, ask):
+        if inst in self.pricetable:
+            bidbase = self.pricetable[inst]['bid_base']
+            askbase = self.pricetable[inst]['ask_base']
+            bidchange = bid-bidbase
+            askchange = ask-askbase
+            count = self.pricetable[inst]['count']+1
+
+            self.pricetable[inst] = dict(
+                bid_base=bidbase,
+                ask_base=askbase,
+                bid=bid,
+                ask=ask,
+                count=count,
+                bidchange=bidchange,
+                askchange=askchange,
+                spread=ask-bid
+            )
+        else:
+            self.pricetable[inst] = dict(
+                bid_base=bid,
+                ask_base=ask,
+                bid=bid,
+                ask=ask,
+                count=1,
+                bidchange=0,
+                askchange=0
+            )
+
+    def run_pricestream(self):
+        import v20
+        ctxs = v20.Context(
+            hostname='stream-fxpractice.oanda.com', token=defs.key)
+        ctxs.set_header(key='Authorization', value=defs.key)
+        insts = ",".join(defs.instruments)
+
+        response = ctxs.pricing.stream(defs.ACCOUNT_ID, instruments=insts)
+        for typ, data in response.parts():
+            if typ == "pricing.ClientPrice":
+                self.set_price_table(
+                    data.instrument,
+                    data.bids[0].price,
+                    data.asks[0].price)
 
 
 if __name__ == "__main__":

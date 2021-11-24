@@ -17,7 +17,7 @@ class TradingBot():
         self.ctx = v20.Context(hostname=defs.HOSTNAME, token=defs.key)
         self.ctx.set_header(key='Authorization', value=defs.key)
         self.accountid = defs.ACCOUNT_ID
-        self.m = manager.Manager(self.ctx, self.accountid)
+        self.m = manager.Manager(self.ctx, self.accountid, run_stream=True)
 
     def set_schedule(self, func, start, stop, step):
         for i in range(start, stop, step):
@@ -26,12 +26,11 @@ class TradingBot():
 
     def run(self):
         schedule.clear()
-
         self.set_schedule(self.m.check_instruments, 0, 60, 5)
 
-        for i in range(1, 56, 10):
-            p = ':{}'.format(str(i).zfill(2))
-            schedule.every().hour.at(p).do(self.reload_modules)
+        # for i in range(1, 56, 10):
+        #     p = ':{}'.format(str(i).zfill(2))
+        #     schedule.every().hour.at(p).do(self.reload_modules)
 
         schedule.every().hour.at('54:10').do(
             self.run_threaded, self.fetch_data, args=['M5', 100])
@@ -78,11 +77,11 @@ class TradingBot():
 
 if __name__ == '__main__':
     t = TradingBot()
-    print('initial data update')
-    t.fetch_data()
-    t.fetch_data(tf='D', count=10)
-    print('Kpi update')
-    t.update_kpi_file()
+    # print('initial data update')
+    # t.fetch_data()
+    # t.fetch_data(tf='D', count=10)
+    # print('Kpi update')
+    # t.update_kpi_file()
     try:
         t.run()
     except KeyboardInterrupt:

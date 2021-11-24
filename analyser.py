@@ -118,8 +118,8 @@ class Analyser():
         # new dict
         kpi_data = dict(
             inst=inst,
-            mom_q5=df.mom.quantile(.1).round(5),
-            mom_q95=df.mom.quantile(.9).round(5),
+            mom_q5=df.mom.quantile(.09).round(5),
+            mom_q95=df.mom.quantile(.91).round(5),
             linreg_slope=slope.round(7))
 
         # add pivots
@@ -180,10 +180,10 @@ class Analyser():
         signal2 = df.signal2.iloc[-1]
 
         # Strategy3
-        sc1 = (df.STO_K > 85) & (df.lr_slope < 0)
-        sc2 = (df.STO_K < 15) & (df.lr_slope > 0)
+        sc1 = (df.STO_K > 86) & (df.lr_slope < 0)
+        sc2 = (df.STO_K < 14) & (df.lr_slope > 0)
         df['signal_stoch'] = np.where(sc1, -1, 0)
-        df['signal_stoch'] = np.where(sc2, 1, df['signal_stoch'] )
+        df['signal_stoch'] = np.where(sc2, 1, df['signal_stoch'])
         signal3 = df.signal_stoch.iloc[-1]
 
         # Strategy4
