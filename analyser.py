@@ -191,7 +191,7 @@ class Analyser():
         cd2 = (df.hilo < 0) & (df.mom_pos > 0) & (df.mom_slope < 0) & (df.lr_slope < 0)
         df['s4'] = np.where(cd1, 1, 0)
         df['s4'] = np.where(cd2, -1, df['s4'])
-        s4 = df.s4.iloc[-1]
+        s4 = 0 #df.s4.iloc[-1]
 
         signals = dict(
             inst=inst,
@@ -200,7 +200,7 @@ class Analyser():
             s3=signal3,
             s4=s4,
             lrg=df.lr_slope.iloc[-1],
-            stc=df.STO_K.iloc[-1].round(2)
+            sto=df.STO_K.iloc[-1].round(2)
         )
 
         print(signals)
