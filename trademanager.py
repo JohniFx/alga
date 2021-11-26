@@ -18,11 +18,14 @@ class TradeManager():
         self.mgr = m.Manager(ctx, defs.ACCOUNT_ID)
         self.max_loss = deque([0, 0.0], maxlen=25)
         self.lastpl = 0
-        self.new_trade_count = 0
+        self.new_trade_count = 0 
+        self.run()       
         
+    def run(self):
         while True:
-            # os.system('clear')
+            
             self.update_account()
+
             self.manage_trades(self.account.trades, self.account.NAV)
             if self.account.unrealizedPL > self.lastpl:
                 simb = u'\u25B2'
@@ -32,7 +35,8 @@ class TradeManager():
                   + f' PL:{self.account.unrealizedPL:>5} {simb}'
                   + f' DD:{min(self.max_loss):.4f}'
                   + f' nt:{self.new_trade_count}'
-                  + f' pos:{self.get_open_positions()} of {len(defs.instruments)}\n')
+                  + f' p:{self.get_open_positions()} of {len(defs.instruments)}'
+                  + f' o:{len(self.account.orders)}\n')
             self.lastpl = self.account.unrealizedPL
             # self.manage_positions(self.account.positions)
             if len(self.account.trades) == 0:
@@ -52,14 +56,20 @@ class TradeManager():
     
     def manage_trades(self, trades, nav: float) -> None:
         trades.sort(key=lambda x: (x.instrument))
+        print(f'{"id":>6} {"ccy":>7} {"units":>5} {"Entry":>8} {"Stop":>8} {"TS":>8} {"unr.PL":>8} {"rea.PL":>8}')   
+        print(f'{"-"*6} {"-"*7} {"-"*5} {"-"*8} {"-"*8} {"-"*8} {"-"*8}'
+                + f' {"-"*8} {"-"*8} {"-"*5} {"-"*8}')   
+                
         for t in trades:
             mark = ''
             nav_pc = f'{(t.unrealizedPL / nav):.5f}'
             if t.unrealizedPL < min(self.max_loss):
                 self.max_loss.append(t.unrealizedPL)
-            if t.currentUnits == t.initialUnits and t.unrealizedPL <= -(nav * 0.0001):
+            if t.currentUnits == t.initialUnits \
+                    and t.unrealizedPL <= -(nav * 0.0001):
                 mark = 'L1'  # <= {-(nav * 0.0001):.4f}'
-            if t.currentUnits <= t.initialUnits and t.unrealizedPL <= -(nav * 0.0002):
+            if t.currentUnits <= t.initialUnits \
+                    and t.unrealizedPL <= -(nav * 0.0002):
                 mark = 'L2'  # <= {-(nav * 0.0002):.4f}'
             if t.currentUnits <= t.initialUnits and t.unrealizedPL <= -(nav * 0.0003):
                 mark = 'L3'  # <= {-(nav * 0.0003):.4f}'
@@ -77,15 +87,25 @@ class TradeManager():
                 self.ctx.trade.close(self.accountid, t.id, units=t.currentUnits * 0.1)
                 
             rpl = '' if t.realizedPL == 0 else str(round(t.realizedPL, 4))
+            pips = t.unrealizedPL / int(t.currentUnits)
+            stop = ''
+            ts_value = ''
+            for o in self.account.orders:
+                if o.id == t.stopLossOrderID:
+                    stop = f'{float(o.price):.4f}'
+                if o.id == t.trailingStopLossOrderID:
+                    ts_value = f'{float(o.trailingStopValue):.4f}'
+
             print(
-                f'{t.id}'
-                + f' {t.instrument}'
-                + f' {int(t.currentUnits):>5}'
-                + f' {t.price:>10.4f}'
+                f'{t.id} {t.instrument} {int(t.currentUnits):>5}'
+                + f' {t.price:>8.4f}'
+                + f' {stop:>8}'
+                + f' {ts_value:>8}'
                 + f' {t.unrealizedPL:>8.4f}'
-                + f' {rpl:<7}'
+                + f' {rpl:>8}'
                 + f' {nav_pc:>8}'
-                + f' {mark:<20}')            
+                + f' {mark:>5}'
+                + f' {pips:>8.5f}')            
 
     def get_account(self) -> None:
         response = self.ctx.account.get(self.accountid)
@@ -120,15 +140,20 @@ class TradeManager():
                     p.netUnrealizedPL = po.netUnrealizedPL
                     p.longUnrealizedPL = po.longUnrealizedPL
                     p.shortUnrealizedPL = po.shortUnrealizedPL
-                    p.marginused = po.marginUsed
-    
+                    p.marginUsed = po.marginUsed
+        
+        for so in state.orders:
+            for o in self.account.orders:
+                if o.id == so.id:
+                    o.trailingStopValue = so.trailingStopValue
+                    o.distance = so.triggerDistance
+   
     def get_open_positions(self):
         openpos=[]
         for p in self.account.positions:
             if p.marginUsed != None:
                 openpos.append(p)
         return len(openpos)
-
 
     def apply_changes(self, changes: AccountChanges):
         for to in changes.tradesOpened:
@@ -150,12 +175,57 @@ class TradeManager():
                 if t.id == tc.id:
                     self.account.trades.remove(t)
 
-        # print('update positions')
+        # positions
         for p in changes.positions:
             for ap in self.account.positions:
                 if p.instrument == ap.instrument:
                     self.account.positions.remove(ap)
                     self.account.positions.append(p)
+
+        # ordersCancelled: []
+        for occ in changes.ordersCancelled:
+            for o in self.account.orders:
+                if o.id == occ.id:
+                    print(f" order Cancelled: {occ.id} {occ.tradeID} {occ.type}")
+                    self.account.orders.remove(o)
+                    # frissíteni a trade linket.. ha van
+                    for t in self.account.trades:
+                        if t.id == occ.tradeID:
+                            if occ.type == 'STOP_LOSS':
+                                t.stopLossOrderID = None
+                            elif occ.type == 'TAKE_PROFIT':
+                                t.takeProfitOrderID = None
+                            elif occ.type == 'TRAILING_STOP_LOSS':
+                                t.trailingStopLossOrderID = None
+
+
+        # ordersCreated: []
+        for ocr in changes.ordersCreated:
+            print(f" orders Created: {ocr.id} {ocr.tradeID} {ocr.type}")
+            self.account.orders.append(ocr)
+            # frissíteni a trade linket.. ha van
+            for t in self.account.trades:
+                if t.id == ocr.tradeID:
+                    if ocr.type == 'STOP_LOSS':
+                        t.stopLossOrderID = ocr.id
+                    elif ocr.type == 'TAKE_PROFIT':
+                        t.takeProfitOrderID = ocr.id
+                    elif ocr.type == 'TRAILING_STOP_LOSS':
+                        t.trailingStopLossOrderID = ocr.id
+
+        # ordersFilled: []
+        for ofi in changes.ordersFilled:
+            for o in self.account.orders:
+                if o.id == ofi.id:
+                    print(f" order Filled: {ofi.id} {ofi.tradeID} {ofi.type} ")
+                    self.account.orders.remove(o)
+
+        # ordersTriggered: []
+        for otr in changes.ordersTriggered:
+            for o in self.account.orders:
+                if o.id == otr.id:
+                    print(f" order Triggered: {otr.id} {otr.tradeID} {otr.type}")
+                    self.account.orders.remove(o)
 
     def update_attribute(self, dest, name, value):
         # print(name, value)
