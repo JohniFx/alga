@@ -43,7 +43,7 @@ class Manager():
             MINWIN *= -1
             pl = t.price - p.closeoutBid
             if pl > be_pip:
-                print(f' BE:{t.instrument} {t.currentUnits} pl: {pl:.5f}pip')
+                msg= f' BE:{t.instrument} {t.currentUnits} pl: {pl:.5f}pip'
             else:
                 return
 
@@ -86,28 +86,32 @@ class Manager():
 
     def check_instrument(self, inst, positioning=None) -> str:
         try:
-            print(f' stream:{inst}'
-                  + f' B:{self.pricetable[inst]["bid"]:>8.5}'
-                  + f' A:{self.pricetable[inst]["ask"]:>8.5}'
-                  + f' S:{self.pricetable[inst]["spread"]:.5f}'
-                  + f' C:{self.pricetable[inst]["count"]:>5}')
+            msg = f' stream:{inst}'
+            msg += f' B:{self.pricetable[inst]["bid"]:>8.5}'
+            msg += f' A:{self.pricetable[inst]["ask"]:>8.5}'
+            msg += f' S:{self.pricetable[inst]["spread"]:.5f}'
+            msg += f' C:{self.pricetable[inst]["count"]:>5}'
+            # print(msg)
         except KeyError as e:
-            print('Keyerror', inst)
             return
-        
-        signal, signaltype = self.a.get_signal(inst, tf='M5')
 
-        valid = [(-1, -1), (-1, 0), (1, 0), (1, 1)]
-        if (signal, positioning) not in valid:
-            return None
-        piploc = u.get_piplocation(inst, self.insts)    
+        piploc = u.get_piplocation(inst, self.insts)
         spread = self.pricetable[inst]["spread"] / piploc
         bid = self.pricetable[inst]["bid"]
         ask = self.pricetable[inst]["ask"]
 
         if spread > defs.global_params['max_spread']:
-            print(f'wide spread on {inst} {signaltype} {spread:.1f} (max: {defs.global_params["max_spread"]})')
+            # print(
+            #     f'wide spread on {inst} {spread:.1f}'
+            #     +f' (max: {defs.global_params["max_spread"]})')
+            return
+
+        signal, signaltype = self.a.get_signal(inst, tf='M5')
+
+        valid = [(-1, -1), (-1, 0), (1, 0), (1, 1)]
+        if (signal, positioning) not in valid:
             return None
+
 
         sl = defs.global_params['sl']
         tp = defs.global_params['tp']
@@ -218,7 +222,7 @@ class Manager():
             if t.unrealizedPL > 0.02:
                 units_to_close = str(abs(int(t.currentUnits * ratio)))
                 self.ctx.trade.close(self.accountid, t.id, units=units_to_close)
-                print(f'realisation:{t.instrument} {units_to_close} R:{ratio}')
+                # print(f'realisation:{t.instrument} {units_to_close} R:{ratio}')
     
     def set_price_table(self, inst, bid, ask):
         if inst in self.pricetable:

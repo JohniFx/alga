@@ -4,7 +4,7 @@ import defs
 from dateutil import parser
 import os
 import sys
-from time import sleep
+import time
 
 ctxs = v20.Context(hostname='stream-fxpractice.oanda.com', token=defs.key)
 ctxs.set_header(key='Authorization', value=defs.key)
@@ -20,6 +20,10 @@ def curses_main(w):
     curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_RED)
     curses.init_pair(4, curses.COLOR_WHITE, curses.COLOR_BLACK)
     process_data(w)
+
+def reset_price_table():
+    for k in pricetable.keys():
+        pricetable[k]['count'] = 0
 
 
 def set_price_table(inst, bid, ask):
@@ -59,6 +63,8 @@ def process_data(w):
     response = ctxs.pricing.stream(defs.ACCOUNT_ID, instruments=insts)
     for typ, data in response.parts():
         if typ == "pricing.ClientPrice":
+            if (time.localtime().tm_min % 5) == 0 and (time.localtime().tm_sec <10):
+                reset_price_table()
             set_price_table(data.instrument,
                             data.bids[0].price, data.asks[0].price)
             dtime = parser.parse(data.time).strftime("%H:%M:%S")
@@ -92,5 +98,5 @@ if __name__ == ('__main__'):
     except KeyboardInterrupt:
         sys.exit(0)
     except Exception:
-        sleep(10)
+        time.sleep(10)
         os.execv(sys.executable, ['python3'] + sys.argv)
