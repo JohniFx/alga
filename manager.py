@@ -119,7 +119,6 @@ class Manager():
         units = int(ac.marginAvailable/4)
         if signaltype == 'XL':
             units *= 2
-        
         if signal == 1:
             entry = ask
             stopprice = bid - sl*piploc
@@ -223,7 +222,6 @@ class Manager():
                 units_to_close = str(abs(int(t.currentUnits * ratio)))
                 self.ctx.trade.close(self.accountid, t.id, units=units_to_close)
                 # print(f'realisation:{t.instrument} {units_to_close} R:{ratio}')
-    
     def set_price_table(self, inst, bid, ask):
         if inst in self.pricetable:
             bidbase = self.pricetable[inst]['bid_base']
