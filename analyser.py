@@ -221,7 +221,6 @@ class Analyser():
 
 
 if __name__ == "__main__":
-    print('Testing analyser')
     import v20
     import defs
     ctx = v20.Context(hostname=defs.HOSTNAME, token=defs.key)
