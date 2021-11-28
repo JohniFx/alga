@@ -6,4 +6,6 @@ The repository does not include a defs.py file which contains the API key.
 
 Some additional ipynb jupyter notebook files also included. They contain background analysis, and not part of the algo.
 
+Unfortunately the algo is not successful, still producing losses. I have way to many ideas to implement but time is a constraint.
+
 
