@@ -2,9 +2,13 @@ from datetime import datetime
 import pickle
 import defs
 import v20
+import threading
 
 insts = []
 
+def run_threaded(job_func, args=[]):
+    t = threading.Thread(target=job_func, args=args)
+    t.start()
 
 def get_instruments(ctx, accountid):
     insts = ctx.account.instruments(accountid).get('instruments')
@@ -106,13 +110,15 @@ def get_trades_by_instrument(trades, instrument):
 
 
 def check_breakeven_for_position(trades, instrument):
+    # print('breakevencheck: ', instrument)
     all_breakeven = []
     for t in trades:
         if t.instrument == instrument:
             all_breakeven.append(
-                (t.currentUnits > 0 and t.stopLossOrder.price > t.price)
+                (t.currentUnits > 0 and t.stopLossOrder.price >= t.price)
                 or
-                (t.currentUnits < 0 and t.stopLossOrder.price < t.price))
+                (t.currentUnits < 0 and t.stopLossOrder.price <= t.price))
+    # print('len(trades)', all_breakeven)
     return all(all_breakeven)
 
 

@@ -17,27 +17,24 @@ class TradingBot():
         self.ctx = v20.Context(hostname=defs.HOSTNAME, token=defs.key)
         self.ctx.set_header(key='Authorization', value=defs.key)
         self.accountid = defs.ACCOUNT_ID
-        self.m = manager.Manager(self.ctx, self.accountid, run_stream=True)
+        # self.m = manager.Manager(self.ctx, self.accountid)
 
     def set_schedule(self, func, start, stop, step):
         for i in range(start, stop, step):
             p = ':{}'.format(str(i).zfill(2))
-            schedule.every().hour.at(p).do(self.run_threaded, func)
+            schedule.every().hour.at(p).do(u.run_threaded, func)
 
     def run(self):
         schedule.clear()
-        self.set_schedule(self.m.check_instruments, 0, 60, 5)
+        # self.set_schedule(self.m.check_instruments, 0, 60, 5)
 
-        # for i in range(1, 56, 10):
-        #     p = ':{}'.format(str(i).zfill(2))
-        #     schedule.every().hour.at(p).do(self.reload_modules)
 
         schedule.every().hour.at('54:10').do(
-            self.run_threaded, self.fetch_data, args=['M5', 100])
+            u.run_threaded, self.fetch_data, args=['M5', 100])
         schedule.every().hour.at('54:30').do(
-            self.run_threaded, self.update_kpi_file, args=[])
+            u.run_threaded, self.update_kpi_file, args=[])
         schedule.every().day.at('01:15').do(
-            self.run_threaded, self.fetch_data, args=['D', 2])
+            u.run_threaded, self.fetch_data, args=['D', 2])
 
         while True:
             schedule.run_pending()
@@ -70,10 +67,6 @@ class TradingBot():
         self.m = manager.Manager(self.ctx, self.accountid)
         self.run()
 
-    def run_threaded(self, job_func, args=[]):
-        t = threading.Thread(target=job_func, args=args)
-        t.start()
-
 
 if __name__ == '__main__':
     t = TradingBot()
@@ -83,6 +76,7 @@ if __name__ == '__main__':
     # print('Kpi update')
     # t.update_kpi_file()
     try:
+        # t.m.check_instruments()
         t.run()
     except KeyboardInterrupt:
         sys.exit(0)

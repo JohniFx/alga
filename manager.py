@@ -2,17 +2,18 @@ import defs
 import utils as u
 import analyser
 import datetime
-import logging
 import threading
+import v20
 
 
 class Manager():
-    def __init__(self, ctx, accountid, run_stream=False) -> None:
+    def __init__(self, ctx,accountid,run_stream=False,ms_queue=None) -> None:
+
         self.ctx = ctx
+        self.messages = ms_queue
         self.accountid = accountid
         self.insts = u.load_instruments()
-        self.a = analyser.Analyser(self.ctx)
-        self.logger = logging.getLogger('bot.manager')
+        self.a = analyser.Analyser(self.ctx, ms_queue=ms_queue)
         self.pricetable = {}
         if run_stream:
             try:
@@ -36,14 +37,15 @@ class Manager():
         if t.currentUnits > 0:
             pl = p.closeoutAsk - t.price
             if pl > be_pip:
-                print(f' BE:{t.instrument} {t.currentUnits} pl: {pl:.5f}pip')
+                self.messages.append(
+                    f' BE:{t.instrument} {t.currentUnits} pl: {pl:.5f}pip')
             else:
                 return
         if t.currentUnits < 0:
             MINWIN *= -1
             pl = t.price - p.closeoutBid
             if pl > be_pip:
-                msg= f' BE:{t.instrument} {t.currentUnits} pl: {pl:.5f}pip'
+                msg = f' BE:{t.instrument} {t.currentUnits} pl: {pl:.5f}pip'
             else:
                 return
 
@@ -64,12 +66,12 @@ class Manager():
         self.close_trade(t.id, int(abs(t.currentUnits)/5))
 
     def check_instruments(self):
-        print(f'{u.get_now()}')
+        self.messages.append(f'{u.get_now()} checking instruments')
+
         trades = self.ctx.trade.list_open(self.accountid).get('trades')
         trades.sort(key=lambda x: (x.instrument, x.price))
 
         for i in defs.instruments:
-            # print(i)
             inst_trades = u.get_trades_by_instrument(trades, i)
             if len(inst_trades) == 0:
                 threading.Thread(target=self.check_instrument,
@@ -85,6 +87,10 @@ class Manager():
                             target=self.check_instrument, args=[i, -1]).start()
 
     def check_instrument(self, inst, positioning=None) -> str:
+        data_lock = threading.Lock()
+        with data_lock:
+            self.messages.append(f'{inst} positioning:{positioning}')
+
         try:
             msg = f' stream:{inst}'
             msg += f' B:{self.pricetable[inst]["bid"]:>8.5}'
@@ -99,12 +105,13 @@ class Manager():
         spread = self.pricetable[inst]["spread"] / piploc
         bid = self.pricetable[inst]["bid"]
         ask = self.pricetable[inst]["ask"]
-
-        if spread > defs.global_params['max_spread']:
-            # print(
-            #     f'wide spread on {inst} {spread:.1f}'
-            #     +f' (max: {defs.global_params["max_spread"]})')
-            return
+        # pre-trade check
+        if spread > defs.global_params['max_spread'] or spread == 0:
+            data_lock = threading.Lock()
+            with data_lock:
+                self.messages.append(
+                    f'Spread {inst} {spread:.2f} B:{bid} A:{ask} max:{defs.global_params["max_spread"]}')
+            return None
 
         signal, signaltype = self.a.get_signal(inst, tf='M5')
 
@@ -112,13 +119,15 @@ class Manager():
         if (signal, positioning) not in valid:
             return None
 
-
         sl = defs.global_params['sl']
         tp = defs.global_params['tp']
         ac = self.ctx.account.summary(self.accountid).get('account')
         units = int(ac.marginAvailable/4)
+        if positioning == 0:  # azaz nincs az instrumentumon trade
+            units = 10  # buoy
         if signaltype == 'XL':
             units *= 2
+
         if signal == 1:
             entry = ask
             stopprice = bid - sl*piploc
@@ -138,7 +147,9 @@ class Manager():
                f' TP:{profitPrice:>9.5f}'
                f' A:{ask:>8.5f}/B:{bid:<8.5f}'
                f' {spread:>6.4f}')
-        print(msg)
+        data_lock = threading.Lock()
+        with data_lock:
+            self.messages.append(msg)
 
     def place_market(self, inst, units, stopPrice=None, profitPrice=None, id='0'):
         prec = u.get_displayprecision(inst, self.insts)
@@ -207,7 +218,6 @@ class Manager():
             self.ctx.trade.close(self.accountid, tradeid, units='ALL')
         else:
             self.ctx.trade.close(self.accountid, tradeid, units=str(units))
-            msg = f'partial profit: tradeid:{tradeid} unit:{units}'
 
     def close_winners(self):
         trades = self.ctx.trade.list_open(self.accountid).get('trades')
@@ -220,15 +230,16 @@ class Manager():
         for t in trades:
             if t.unrealizedPL > 0.02:
                 units_to_close = str(abs(int(t.currentUnits * ratio)))
-                self.ctx.trade.close(self.accountid, t.id, units=units_to_close)
-                # print(f'realisation:{t.instrument} {units_to_close} R:{ratio}')
+                self.ctx.trade.close(self.accountid, t.id,
+                                     units=units_to_close)
+
     def set_price_table(self, inst, bid, ask):
         if inst in self.pricetable:
             bidbase = self.pricetable[inst]['bid_base']
             askbase = self.pricetable[inst]['ask_base']
             bidchange = bid-bidbase
             askchange = ask-askbase
-            count = self.pricetable[inst]['count'] + 1 
+            count = self.pricetable[inst]['count'] + 1
             spread = ask - bid
 
             self.pricetable[inst] = dict(
@@ -250,17 +261,16 @@ class Manager():
                 count=1,
                 bidchange=0,
                 askchange=0,
-                spread=0
+                spread=99
             )
 
     def run_pricestream(self):
-        import v20
         ctxs = v20.Context(
             hostname='stream-fxpractice.oanda.com', token=defs.key)
         ctxs.set_header(key='Authorization', value=defs.key)
         insts = ",".join(defs.instruments)
         response = ctxs.pricing.stream(defs.ACCOUNT_ID, instruments=insts)
-        print('price stream started')
+        self.messages.append('price stream started')
         for typ, data in response.parts():
             if typ == "pricing.ClientPrice":
                 self.set_price_table(
@@ -270,7 +280,6 @@ class Manager():
 
 
 if __name__ == "__main__":
-    import v20
     ctx = v20.Context(hostname=defs.HOSTNAME, token=defs.key)
     ctx.set_header(key='Authorization', value=defs.key)
     mgr = Manager(ctx, defs.ACCOUNT_ID)

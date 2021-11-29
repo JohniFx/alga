@@ -63,7 +63,7 @@ def process_data(w):
     response = ctxs.pricing.stream(defs.ACCOUNT_ID, instruments=insts)
     for typ, data in response.parts():
         if typ == "pricing.ClientPrice":
-            if (time.localtime().tm_min % 5) == 0 and (time.localtime().tm_sec <10):
+            if (time.localtime().tm_min % 15) == 0 and (time.localtime().tm_sec <10):
                 reset_price_table()
             set_price_table(data.instrument,
                             data.bids[0].price, data.asks[0].price)

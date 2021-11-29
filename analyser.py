@@ -1,14 +1,12 @@
 import numpy as np
 import pandas as pd
 import json
-import logging
-from time import sleep
 
 
 class Analyser():
-    def __init__(self, ctx) -> None:
+    def __init__(self, ctx, ms_queue=None) -> None:
         self.ctx = ctx
-        self.logger = logging.getLogger('bot.analyser')
+        self.messages = ms_queue
 
     def get_candles(self, inst, count=15, timeframe='M5'):
         params = dict(
@@ -203,7 +201,7 @@ class Analyser():
             sto=df.STO_K.iloc[-1].round(2)
         )
 
-        print(signals)
+        self.messages.append(str(signals))
         if (signal1 == signal2) and (signal2 == signal3) and (signal3 == df.lr_slope.iloc[-1]):
             print('** supersignal **')
             return signal1, 'XL'
@@ -221,6 +219,7 @@ class Analyser():
 
 
 if __name__ == "__main__":
+    print('Testing analyser')
     import v20
     import defs
     ctx = v20.Context(hostname=defs.HOSTNAME, token=defs.key)
