@@ -54,16 +54,17 @@ class Manager():
             type='STOP_LOSS',
             tradeID=t.id)
 
-        ts = dict(
-            distance=f'{ts_dist:.{prec}f}',
-            tradeID=t.id)
+        # ts = dict(
+        #     distance=f'{ts_dist:.{prec}f}',
+        #     tradeID=t.id)
 
         self.ctx.trade.set_dependent_orders(
             self.accountid,
             t.id,
-            stopLoss=sl,
-            trailingStopLoss=ts)
-        self.close_trade(t.id, int(abs(t.currentUnits)/5))
+            stopLoss=sl
+        )
+            # trailingStopLoss=ts)
+        # self.close_trade(t.id, int(abs(t.currentUnits)/5))
 
     def check_instruments(self):
         self.messages.append(f'{u.get_now()} checking instruments')
@@ -87,10 +88,6 @@ class Manager():
                             target=self.check_instrument, args=[i, -1]).start()
 
     def check_instrument(self, inst, positioning=None) -> str:
-        data_lock = threading.Lock()
-        with data_lock:
-            self.messages.append(f'{inst} positioning:{positioning}')
-
         try:
             msg = f' stream:{inst}'
             msg += f' B:{self.pricetable[inst]["bid"]:>8.5}'
@@ -106,11 +103,7 @@ class Manager():
         bid = self.pricetable[inst]["bid"]
         ask = self.pricetable[inst]["ask"]
         # pre-trade check
-        if spread > defs.global_params['max_spread'] or spread == 0:
-            data_lock = threading.Lock()
-            with data_lock:
-                self.messages.append(
-                    f'Spread {inst} {spread:.2f} B:{bid} A:{ask} max:{defs.global_params["max_spread"]}')
+        if spread > defs.global_params['max_spread'] or spread == 0:           
             return None
 
         signal, signaltype = self.a.get_signal(inst, tf='M5')
@@ -166,8 +159,8 @@ class Manager():
             units=units,
             clientExtensions=ce,
             takeProfitOnFill=tp_on_fill,
-            stopLossOnFill=sl_on_fill,
-            trailingStopLossOnFill=ts_on_fill
+            stopLossOnFill=sl_on_fill
+            # trailingStopLossOnFill=ts_on_fill
         )
 
         response = self.ctx.order.market(self.accountid, **order)

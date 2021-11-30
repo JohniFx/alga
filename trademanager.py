@@ -31,7 +31,7 @@ class TradeManager():
         schedule.every(3).minutes.do(
             utils.run_threaded, self.mgr.check_instruments)
 
-        utils.run_threaded(curses.wrapper, args=[self.run,])
+        utils.run_threaded(curses.wrapper, args=[self.run, ])
         
         # initial check
         self.mgr.check_instruments()
@@ -55,7 +55,7 @@ class TradeManager():
             else:
                 time.sleep(20)
 
-            if self.account.unrealizedPL > 3:
+            if self.account.unrealizedPL > (self.account.NAV*0.002):
                 self.messages.append('Profit realization')
                 self.mgr.realize_profit(ratio=.2)
 
@@ -64,10 +64,10 @@ class TradeManager():
         trades.sort(key=lambda x: (x.instrument))
         w.addstr(
             2, 0, f'{"id":>6} {"ccy":>7} {"units":>5} {"Entry":>8}'
-            + f' {"Stop":>8} {"TS":>8} {"unr.PL":>8} {"rea.PL":>8}'
-            + f' {"distan":>8} {"bid":>8} {"ask":>8}')
-        w.addstr(3, 0, f'{"-"*6} {"-"*7} {"-"*5} {"-"*8} {"-"*8} {"-"*8} {"-"*8}'
-                 + f' {"-"*8} {"-"*8} {"-"*7} {"-"*8} {"-"*8}')
+            + f' {"SL":>8} {"TS":>8} {"unr.PL":>8} {"rea.PL":>8}'
+            + f' {"dist":>8} {"bid":>9} {"ask":>9} {"pips":>8}')
+        w.addstr(3, 0, f'{"-"*6:>6} {"-"*7:>7} {"-"*5:>5} {"-"*8:>8} {"-"*8} {"-"*8} {"-"*8}'
+                 + f' {"-"*8} {"-"*8} {"-"*9} {"-"*9} {"-"*8}')
         i = 3
         for t in trades:
             rpl = '' if t.realizedPL == 0 else str(round(t.realizedPL, 4))
@@ -104,16 +104,17 @@ class TradeManager():
             piploc = utils.get_piplocation(t.instrument, self.mgr.insts)
             be_pip = defs.global_params['be_pip'] * piploc
             if t.currentUnits > 0:
-                pl = ask - t.price
-                if pl > be_pip and float(stop) < t.price:
+                pl_pips = ask - t.price
+
+                if pl_pips > be_pip and float(stop) < t.price:
                     self.messages.append(f'L-BE: {t.instrument} A:{ask} > {t.price}')
                     self.mgr.move_stop_breakeven(t)
             if t.currentUnits < 0:
-                pl = t.price - bid
-                if pl > be_pip and float(stop) > t.price:
+                pl_pips = t.price - bid
+                if pl_pips > be_pip and float(stop) > t.price:
                     self.messages.append(f'S-BE: {t.instrument} B:{bid} < {t.price}')
                     self.mgr.move_stop_breakeven(t)
-                
+            pips = pl_pips / piploc 
 
             if t.realizedPL <= 0 and t.unrealizedPL > (nav * 0.0001):
                 mark = 'P1'  # > {nav * 0.0001:.4f}'
@@ -136,12 +137,11 @@ class TradeManager():
             msg += f' {t.unrealizedPL:>8.4f}'
             msg += f' {rpl:>8}'
             msg += f' {distance:>8}'
-            msg += f' {bid:>7}'
-            msg += f' {ask:>7}'
-            msg += f' {pips:>8.5f}'
+            msg += f' {bid:>9.5f}'
+            msg += f' {ask:>9.5f}'
+            msg += f' {pips:>8.1f}'
             i += 1
             w.addstr(i, 0, msg)
-        # w.refresh()
         i+=2
         self.show_messages(w, row=i)
 
@@ -163,6 +163,10 @@ class TradeManager():
         self.lastpl = self.account.unrealizedPL
 
     def show_messages(self, w, row=17):
+        if len(self.messages) == 0:
+            w.refresh()
+            return
+        w.clrtobot()
         for msg in self.messages:
             try:
                 w.addstr(row, 0, msg)    
