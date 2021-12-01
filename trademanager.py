@@ -60,14 +60,9 @@ class TradeManager():
                 self.mgr.realize_profit(ratio=.2)
 
     def manage_trades(self, trades, nav: float, w) -> None:
-        # w.reset()
         trades.sort(key=lambda x: (x.instrument))
-        w.addstr(
-            2, 0, f'{"id":>6} {"ccy":>7} {"units":>5} {"Entry":>8}'
-            + f' {"SL":>8} {"TS":>8} {"unr.PL":>8} {"rea.PL":>8}'
-            + f' {"dist":>8} {"bid":>9} {"ask":>9} {"pips":>8}')
-        w.addstr(3, 0, f'{"-"*6:>6} {"-"*7:>7} {"-"*5:>5} {"-"*8:>8} {"-"*8} {"-"*8} {"-"*8}'
-                 + f' {"-"*8} {"-"*8} {"-"*9} {"-"*9} {"-"*8}')
+        self.show_table_head(w)
+
         i = 3
         for t in trades:
             rpl = '' if t.realizedPL == 0 else str(round(t.realizedPL, 4))
@@ -107,6 +102,9 @@ class TradeManager():
                 pl_pips = ask - t.price
 
                 if pl_pips > be_pip and float(stop) < t.price:
+                    # hány pozi van ezen a tréden?
+                    for t in self.account.trades:
+
                     self.messages.append(f'L-BE: {t.instrument} A:{ask} > {t.price}')
                     self.mgr.move_stop_breakeven(t)
             if t.currentUnits < 0:
@@ -140,10 +138,19 @@ class TradeManager():
             msg += f' {bid:>9.5f}'
             msg += f' {ask:>9.5f}'
             msg += f' {pips:>8.1f}'
+            msg += f' {mark:>8}'
             i += 1
             w.addstr(i, 0, msg)
         i+=2
         self.show_messages(w, row=i)
+
+    def show_table_head(self, w):
+        w.addstr(
+            2, 0, f'{"id":>6} {"ccy":>7} {"units":>5} {"Entry":>8}'
+            + f' {"SL":>8} {"TS":>8} {"unr.PL":>8} {"rea.PL":>8}'
+            + f' {"dist":>8} {"bid":>9} {"ask":>9} {"pips":>8}')
+        w.addstr(3, 0, f'{"-"*6:>6} {"-"*7:>7} {"-"*5:>5} {"-"*8:>8} {"-"*8} {"-"*8} {"-"*8}'
+                 + f' {"-"*8} {"-"*8} {"-"*9} {"-"*9} {"-"*8}')
 
     def show_stat(self, w):
         if self.account.unrealizedPL > self.lastpl:
@@ -191,16 +198,9 @@ class TradeManager():
         self.lastTransactionID = r.get('lastTransactionID')
         self.apply_changes(changes)
 
-        # update price dependent fields
-        for field in state.fields():
-            self.update_attribute(self.account, field.name, field.value)
+        self.update_fields(state)
 
-        # update price dependent lists
-        for tc in state.trades:
-            for t in self.account.trades:
-                if t.id == tc.id:
-                    t.unrealizedPL = tc.unrealizedPL
-                    t.marginUsed = tc.marginUsed
+        self.update_trades(state)
 
         for po in state.positions:
             for p in self.account.positions:
@@ -209,13 +209,55 @@ class TradeManager():
                     p.longUnrealizedPL = po.longUnrealizedPL
                     p.shortUnrealizedPL = po.shortUnrealizedPL
                     p.marginUsed = po.marginUsed
+                    # update short.tradeIDs, units, averagePrice
         
         for so in state.orders:
             for o in self.account.orders:
                 if o.id == so.id:
                     o.trailingStopValue = so.trailingStopValue
                     o.distance = so.triggerDistance
+
+    def update_trades(self, state):
+        for tc in state.trades:
+            for t in self.account.trades:
+                if t.id == tc.id:
+                    t.unrealizedPL = tc.unrealizedPL
+                    t.marginUsed = tc.marginUsed
+
+    def update_fields(self, state):
+        for field in state.fields():
+            self.update_attribute(self.account, field.name, field.value)
    
+    def update_positions(self, p):
+        # instrument: USD_CHF
+        # pl: -197.288
+        # unrealizedPL: 0.4207
+        # marginUsed: 23.88
+        # resettablePL: -197.288
+        # financing: 5.5264
+        # commission: 0.0
+        # guaranteedExecutionFees: 0.0
+        # long:
+        # units: 0.0
+        # pl: -163.0196
+        # unrealizedPL: 0.0
+        # resettablePL: -163.0196
+        # financing: 5.9687
+        # guaranteedExecutionFees: 0.0
+        # short:
+        # units: -597.0
+        # averagePrice: 0.91918
+        # tradeIDs:
+        # - '147164'
+        # - '147688'
+        # - '147830'
+        # pl: -34.2684
+        # unrealizedPL: 0.4207
+        # resettablePL: -34.2684
+        # financing: -0.4423
+        # guaranteedExecutionFees: 0.0
+        pass
+
     def get_open_positions(self):
         openpos=[]
         for p in self.account.positions:
