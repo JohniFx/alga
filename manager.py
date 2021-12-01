@@ -64,7 +64,7 @@ class Manager():
             stopLoss=sl
         )
             # trailingStopLoss=ts)
-        # self.close_trade(t.id, int(abs(t.currentUnits)/5))
+        self.close_trade(t.id, int(abs(t.currentUnits)/5))
 
     def check_instruments(self):
         self.messages.append(f'{u.get_now()} checking instruments')
