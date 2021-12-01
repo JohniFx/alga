@@ -7,8 +7,7 @@ import v20
 
 
 class Manager():
-    def __init__(self, ctx,accountid,run_stream=False,ms_queue=None) -> None:
-
+    def __init__(self, ctx, accountid, run_stream=False, ms_queue=None):
         self.ctx = ctx
         self.messages = ms_queue
         self.accountid = accountid
@@ -26,9 +25,9 @@ class Manager():
         be_pip = defs.global_params['be_pip'] * piploc
         MINWIN = 3 * piploc
 
-        ts_dist = 1.5*defs.global_params['ts'] * \
-            u.get_piplocation(t.instrument, self.insts)
-        prec = u.get_displayprecision(t.instrument, self.insts)
+        # ts_dist = 1.5*defs.global_params['ts'] * \
+        #     u.get_piplocation(t.instrument, self.insts)
+        # prec = u.get_displayprecision(t.instrument, self.insts)
 
         p = self.ctx.pricing.get(
             self.accountid,
@@ -45,7 +44,7 @@ class Manager():
             MINWIN *= -1
             pl = t.price - p.closeoutBid
             if pl > be_pip:
-                msg = f' BE:{t.instrument} {t.currentUnits} pl: {pl:.5f}pip'
+                self.messages.append(f' BE:{t.instrument} pl: {pl:.5f}pip')
             else:
                 return
 
@@ -63,7 +62,7 @@ class Manager():
             t.id,
             stopLoss=sl
         )
-            # trailingStopLoss=ts)
+        # trailingStopLoss=ts)
         self.close_trade(t.id, int(abs(t.currentUnits)/5))
 
     def check_instruments(self):
@@ -94,8 +93,7 @@ class Manager():
             msg += f' A:{self.pricetable[inst]["ask"]:>8.5}'
             msg += f' S:{self.pricetable[inst]["spread"]:.5f}'
             msg += f' C:{self.pricetable[inst]["count"]:>5}'
-            # print(msg)
-        except KeyError as e:
+        except KeyError:
             return
 
         piploc = u.get_piplocation(inst, self.insts)
@@ -103,7 +101,7 @@ class Manager():
         bid = self.pricetable[inst]["bid"]
         ask = self.pricetable[inst]["ask"]
         # pre-trade check
-        if spread > defs.global_params['max_spread'] or spread == 0:           
+        if spread > defs.global_params['max_spread'] or spread == 0:
             return None
 
         signal, signaltype = self.a.get_signal(inst, tf='M5')
@@ -144,13 +142,14 @@ class Manager():
         with data_lock:
             self.messages.append(msg)
 
-    def place_market(self, inst, units, stopPrice=None, profitPrice=None, id='0'):
+    def place_market(self, inst, units, stopPrice, profitPrice=None, id='0'):
         prec = u.get_displayprecision(inst, self.insts)
-        tsdist = defs.global_params['ts'] * u.get_piplocation(inst, self.insts)
+        # gp_ts = defs.global_params['ts']
+        # tsdist = gp_ts * u.get_piplocation(inst, self.insts)
 
         sl_on_fill = dict(timeInForce='GTC', price=f'{stopPrice:.{prec}f}')
         tp_on_fill = dict(timeInForce='GTC', price=f'{profitPrice:.{prec}f}')
-        ts_on_fill = dict(timeInForce='GTC', distance=f'{tsdist:.{prec}f}')
+        # ts_on_fill = dict(timeInForce='GTC', distance=f'{tsdist:.{prec}f}')
         ce = dict(id=id, tag='Signal id', comment='Signal id commented')
 
         order = dict(

@@ -4,15 +4,14 @@ import defs
 import time
 import manager as m
 from collections import deque
-import sys
 import os
 import curses
 import schedule
 import utils
 
 
-class TradeManager():   
-    def __init__(self, ctx) -> None:
+class TradeManager():
+    def __init__(self, ctx):
         self.messages = []
         self.ctx = ctx
         self.accountid = defs.ACCOUNT_ID
@@ -24,30 +23,31 @@ class TradeManager():
         self.new_trade_count = 0
 
         self.mgr = m.Manager(ctx, defs.ACCOUNT_ID,
-                             run_stream=True, 
+                             run_stream=True,
                              ms_queue=self.messages)
-        
+
         # start threads
         schedule.every(3).minutes.do(
             utils.run_threaded, self.mgr.check_instruments)
 
         utils.run_threaded(curses.wrapper, args=[self.run, ])
-        
+
         # initial check
         self.mgr.check_instruments()
 
         while True:
             schedule.run_pending()
             time.sleep(schedule.idle_seconds())
-       
+
     def run(self, w):
         curses.start_color()
         curses.use_default_colors()
         while True:
             self.update_account()
-            self.manage_trades(self.account.trades, self.account.NAV, w)
+            self.show_trades(w)
+            self.manage_trades(w)
             self.show_stat(w)
-            
+
             if len(self.account.trades) == 0:
                 time.sleep(60)
             elif len(self.account.trades) < 6:
@@ -59,12 +59,10 @@ class TradeManager():
                 self.messages.append('Profit realization')
                 self.mgr.realize_profit(ratio=.2)
 
-    def manage_trades(self, trades, nav: float, w) -> None:
-        trades.sort(key=lambda x: (x.instrument))
+    def show_trades(self, w):
         self.show_table_head(w)
-
         i = 3
-        for t in trades:
+        for t in self.account.trades:
             rpl = '' if t.realizedPL == 0 else str(round(t.realizedPL, 4))
             pips = t.unrealizedPL / int(t.currentUnits)
             stop = ''
@@ -75,59 +73,20 @@ class TradeManager():
                 ask = self.mgr.pricetable[t.instrument]['ask']
             else:
                 continue
-
             for o in self.account.orders:
                 if o.id == t.stopLossOrderID:
                     stop = f'{float(o.price):.4f}'
                 if o.id == t.trailingStopLossOrderID:
                     ts_value = f'{float(o.trailingStopValue):.4f}'
                     distance = f'{float(o.distance):.4f}'
-            
-            mark = ''
-            if t.unrealizedPL < min(self.max_loss):
-                self.max_loss.append(t.unrealizedPL)
-            if t.currentUnits == t.initialUnits \
-                    and t.unrealizedPL <= -(nav * 0.0001):
-                mark = 'L1'  # <= {-(nav * 0.0001):.4f}'
-            if t.currentUnits <= t.initialUnits \
-                    and t.unrealizedPL <= -(nav * 0.0002):
-                mark = 'L2'  # <= {-(nav * 0.0002):.4f}'
-            if t.currentUnits <= t.initialUnits and t.unrealizedPL <= -(nav * 0.0003):
-                mark = 'L3'  # <= {-(nav * 0.0003):.4f}'
-            
-            ## Breakeven
+
             piploc = utils.get_piplocation(t.instrument, self.mgr.insts)
-            be_pip = defs.global_params['be_pip'] * piploc
             if t.currentUnits > 0:
                 pl_pips = ask - t.price
-
-                if pl_pips > be_pip and float(stop) < t.price:
-                    # hány pozi van ezen a tréden?
-                    for t in self.account.trades:
-
-                    self.messages.append(f'L-BE: {t.instrument} A:{ask} > {t.price}')
-                    self.mgr.move_stop_breakeven(t)
             if t.currentUnits < 0:
                 pl_pips = t.price - bid
-                if pl_pips > be_pip and float(stop) > t.price:
-                    self.messages.append(f'S-BE: {t.instrument} B:{bid} < {t.price}')
-                    self.mgr.move_stop_breakeven(t)
-            pips = pl_pips / piploc 
+            pips = pl_pips / piploc
 
-            if t.realizedPL <= 0 and t.unrealizedPL > (nav * 0.0001):
-                mark = 'P1'  # > {nav * 0.0001:.4f}'
-                self.mgr.move_stop_breakeven(t)
-
-            if t.realizedPL > 0 and t.unrealizedPL > (nav * 0.0002):
-                mark = 'P2'  # > {nav * 0.0002:.4f}'
-            if t.realizedPL > 0 and t.unrealizedPL > (nav * 0.0003):
-                mark = 'P3'  # > {nav * 0.0003:.4f}'
-            if t.realizedPL > 0 and t.unrealizedPL > (nav * 0.0004):
-                mark = 'P4'  # > {nav * 0.0003:.4f}'
-            if t.realizedPL > 0 and t.unrealizedPL > (nav * 0.0006):
-                mark = 'P5+'  # > {nav * 0.0003:.4f}'
-                self.ctx.trade.close(self.accountid, t.id, units=t.currentUnits * 0.1)
-                
             msg = f'{t.id} {t.instrument} {int(t.currentUnits):>5}'
             msg += f' {t.price:>8.4f}'
             msg += f' {stop:>8}'
@@ -138,18 +97,65 @@ class TradeManager():
             msg += f' {bid:>9.5f}'
             msg += f' {ask:>9.5f}'
             msg += f' {pips:>8.1f}'
-            msg += f' {mark:>8}'
             i += 1
             w.addstr(i, 0, msg)
-        i+=2
+        i += 2
         self.show_messages(w, row=i)
+
+    def manage_trades(self, w):
+
+        self.account.trades.sort(key=lambda x: (x.instrument))
+        for t in self.account.trades:
+            stop = ''
+
+            if t.instrument in self.mgr.pricetable.keys():
+                bid = self.mgr.pricetable[t.instrument]['bid']
+                ask = self.mgr.pricetable[t.instrument]['ask']
+            else:
+                continue
+
+            for o in self.account.orders:
+                if o.id == t.stopLossOrderID:
+                    stop = f'{float(o.price):.4f}'
+
+            if t.unrealizedPL < min(self.max_loss):
+                self.max_loss.append(t.unrealizedPL)
+
+            piploc = utils.get_piplocation(t.instrument, self.mgr.insts)
+            be_pip = defs.global_params['be_pip'] * piploc
+
+            if t.currentUnits > 0:
+                pl_pips = ask - t.price
+                if pl_pips > be_pip and float(stop) < t.price:
+                    msg = f'L-BE: {t.instrument} A:{ask} > {t.price}'
+                    self.messages.append(msg)
+                    self.mgr.move_stop_breakeven(t)
+
+            if t.currentUnits < 0:
+                pl_pips = t.price - bid
+                if pl_pips > be_pip and float(stop) > t.price:
+                    msg = f'S-BE: {t.instrument} B:{bid} < {t.price}'
+                    self.messages.append(msg)
+                    self.mgr.move_stop_breakeven(t)
+
+            if t.realizedPL <= 0 and \
+                    t.unrealizedPL > (self.account.NAV * 0.0001):
+                self.mgr.move_stop_breakeven(t)
+
+            if t.realizedPL > 0 and \
+                    t.unrealizedPL > (self.account.NAV * 0.0006):
+                units_to_close = t.currentUnits * 0.1
+                self.ctx.trade.close(self.accountid, t.id,
+                                     units=units_to_close)
 
     def show_table_head(self, w):
         w.addstr(
             2, 0, f'{"id":>6} {"ccy":>7} {"units":>5} {"Entry":>8}'
             + f' {"SL":>8} {"TS":>8} {"unr.PL":>8} {"rea.PL":>8}'
             + f' {"dist":>8} {"bid":>9} {"ask":>9} {"pips":>8}')
-        w.addstr(3, 0, f'{"-"*6:>6} {"-"*7:>7} {"-"*5:>5} {"-"*8:>8} {"-"*8} {"-"*8} {"-"*8}'
+        
+        w.addstr(3, 0, f'{"-"*6:>6} {"-"*7:>7} {"-"*5:>5}'
+                 + f' {"-"*8:>8} {"-"*8} {"-"*8} {"-"*8}'
                  + f' {"-"*8} {"-"*8} {"-"*9} {"-"*9} {"-"*8}')
 
     def show_stat(self, w):
@@ -176,7 +182,7 @@ class TradeManager():
         w.clrtobot()
         for msg in self.messages:
             try:
-                w.addstr(row, 0, msg)    
+                w.addstr(row, 0, msg)
             except curses.error:
                 pass
             row += 1
@@ -184,7 +190,7 @@ class TradeManager():
         w.refresh()
         self.messages.clear()
 
-    def get_account(self) -> None:
+    def get_account(self):
         response = self.ctx.account.get(self.accountid)
         self.account = response.get('account')
         self.lastTransactionID = response.get('lastTransactionID')
@@ -210,7 +216,7 @@ class TradeManager():
                     p.shortUnrealizedPL = po.shortUnrealizedPL
                     p.marginUsed = po.marginUsed
                     # update short.tradeIDs, units, averagePrice
-        
+
         for so in state.orders:
             for o in self.account.orders:
                 if o.id == so.id:
@@ -227,7 +233,7 @@ class TradeManager():
     def update_fields(self, state):
         for field in state.fields():
             self.update_attribute(self.account, field.name, field.value)
-   
+
     def update_positions(self, p):
         # instrument: USD_CHF
         # pl: -197.288
@@ -259,20 +265,18 @@ class TradeManager():
         pass
 
     def get_open_positions(self):
-        openpos=[]
+        openpos = []
         for p in self.account.positions:
-            if p.marginUsed != None:
+            if p.marginUsed is not None:
                 openpos.append(p)
         return len(openpos)
 
     def apply_changes(self, changes: AccountChanges):
         for to in changes.tradesOpened:
-            # print(f' new trade: {to.id} {to.instrument} {to.price}')
             self.account.trades.append(to)
-            self.new_trade_count +=1
+            self.new_trade_count += 1
 
         for tr in changes.tradesReduced:
-            # print(f' trade reduced: {tr.id}')
             for t in self.account.trades:
                 if t.id == tr.id:
                     t.currentUnits = tr.currentUnits
@@ -280,25 +284,20 @@ class TradeManager():
                     t.averageClosePrice = tr.averageClosePrice
 
         for tc in changes.tradesClosed:
-            # print(f" trade closed: {tc.id} {tc.instrument} ")
             for t in self.account.trades:
                 if t.id == tc.id:
                     self.account.trades.remove(t)
 
-        # positions
         for p in changes.positions:
             for ap in self.account.positions:
                 if p.instrument == ap.instrument:
                     self.account.positions.remove(ap)
                     self.account.positions.append(p)
 
-        # ordersCancelled: []
         for occ in changes.ordersCancelled:
             for o in self.account.orders:
                 if o.id == occ.id:
-                    # print(f" order Cancelled: {occ.id} {occ.tradeID} {occ.type}")
                     self.account.orders.remove(o)
-                    # frissíteni a trade linket.. ha van
                     for t in self.account.trades:
                         if t.id == occ.tradeID:
                             if occ.type == 'STOP_LOSS':
@@ -308,12 +307,8 @@ class TradeManager():
                             elif occ.type == 'TRAILING_STOP_LOSS':
                                 t.trailingStopLossOrderID = None
 
-
-        # ordersCreated: []
         for ocr in changes.ordersCreated:
-            # print(f" orders Created: {ocr.id} {ocr.tradeID} {ocr.type}")
             self.account.orders.append(ocr)
-            # frissíteni a trade linket.. ha van
             for t in self.account.trades:
                 if t.id == ocr.tradeID:
                     if ocr.type == 'STOP_LOSS':
@@ -323,18 +318,14 @@ class TradeManager():
                     elif ocr.type == 'TRAILING_STOP_LOSS':
                         t.trailingStopLossOrderID = ocr.id
 
-        # ordersFilled: []
         for ofi in changes.ordersFilled:
             for o in self.account.orders:
                 if o.id == ofi.id:
-                    # print(f" order Filled: {ofi.id} {ofi.tradeID} {ofi.type} ")
                     self.account.orders.remove(o)
 
-        # ordersTriggered: []
         for otr in changes.ordersTriggered:
             for o in self.account.orders:
                 if o.id == otr.id:
-                    # print(f" order Triggered: {otr.id} {otr.tradeID} {otr.type}")
                     self.account.orders.remove(o)
 
     def update_attribute(self, dest, name, value):
@@ -352,4 +343,3 @@ if __name__ == '__main__':
         tm = TradeManager(ctx)
     except KeyboardInterrupt:
         os._exit(1)
-        # sys.exit(0)
