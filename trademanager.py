@@ -44,20 +44,16 @@ class TradeManager():
         curses.use_default_colors()
         while True:
             self.update_account()
-            self.show_trades(w)
-            self.manage_trades(w)
             self.show_stat(w)
-
-            if len(self.account.trades) == 0:
-                time.sleep(60)
-            elif len(self.account.trades) < 6:
-                time.sleep(40)
-            else:
-                time.sleep(20)
+            self.show_trades(w)
+            self.manage_positions()
+            self.manage_trades()
 
             if self.account.unrealizedPL > (self.account.NAV*0.002):
                 self.messages.append('Profit realization')
                 self.mgr.realize_profit(ratio=.2)
+
+            time.sleep(30)
 
     def show_trades(self, w):
         self.show_table_head(w)
@@ -82,9 +78,9 @@ class TradeManager():
 
             piploc = utils.get_piplocation(t.instrument, self.mgr.insts)
             if t.currentUnits > 0:
-                pl_pips = ask - t.price
-            if t.currentUnits < 0:
-                pl_pips = t.price - bid
+                pl_pips = bid - t.price
+            else:            
+                pl_pips = t.price - ask
             pips = pl_pips / piploc
 
             msg = f'{t.id} {t.instrument} {int(t.currentUnits):>5}'
@@ -102,7 +98,10 @@ class TradeManager():
         i += 2
         self.show_messages(w, row=i)
 
-    def manage_trades(self, w):
+    def manage_positions(self):
+        pass
+
+    def manage_trades(self):
 
         self.account.trades.sort(key=lambda x: (x.instrument))
         for t in self.account.trades:

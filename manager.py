@@ -121,12 +121,12 @@ class Manager():
 
         if signal == 1:
             entry = ask
-            stopprice = bid - sl*piploc
+            stopprice = ask - sl*piploc # spread excluded if ask - SL
             profitPrice = ask + tp*piploc
         elif signal == -1:
             units *= -1
             entry = bid
-            stopprice = ask + sl*piploc
+            stopprice = bid + sl*piploc
             profitPrice = bid - tp*piploc
 
         self.place_market(inst, units, stopprice, profitPrice, signaltype)
