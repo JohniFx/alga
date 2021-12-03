@@ -7,13 +7,21 @@ import v20
 
 
 class Manager():
-    def __init__(self, ctx, accountid, run_stream=False, ms_queue=None):
+    def __init__(
+        self, 
+        ctx, 
+        accountid, 
+        run_stream=False, 
+        ms_queue=None,
+        account = None):
         self.ctx = ctx
         self.messages = ms_queue
         self.accountid = accountid
         self.insts = u.load_instruments()
         self.a = analyser.Analyser(self.ctx, ms_queue=ms_queue)
         self.pricetable = {}
+        self.account = account
+        self.trailingorders = []
         if run_stream:
             try:
                 threading.Thread(target=self.run_pricestream).start()
@@ -64,6 +72,18 @@ class Manager():
         )
         # trailingStopLoss=ts)
         self.close_trade(t.id, int(abs(t.currentUnits)/5))
+    
+    def move_stop(self, tradeid, newstop):
+        sl = dict(
+            price=str(f'{newstop:.5f}'),
+            type='STOP_LOSS',
+            tradeID=tradeid)
+
+        self.ctx.trade.set_dependent_orders(
+            self.accountid,
+            tradeid,
+            stopLoss=sl
+        )
 
     def pre_trade_checks(self, trades, positions) -> bool:
         # max_open_trades
@@ -81,17 +101,15 @@ class Manager():
         max_o_i = defs.global_params['max_open_trades_per_instrument']
         for p in positions:
             if p.long.tradeIDs is not None:
-                if len(p.long.tradeIDs) > max_o_i:
+                if len(p.long.tradeIDs) >= max_o_i:
                     return False
             if p.short.tradeIDs is not None:
-                if len(p.short.tradeIDs) > max_o_i:
+                if len(p.short.tradeIDs) >= max_o_i:
                     return False
 
         return True
 
     def check_instruments(self):
-        self.messages.append(f'{u.get_now()} checking instruments')
-
         trades = self.ctx.trade.list_open(self.accountid).get('trades')
         trades.sort(key=lambda x: (x.instrument, x.price))
         positions = self.ctx.position.list_open(defs.ACCOUNT_ID).get('positions')
@@ -99,6 +117,7 @@ class Manager():
         if not self.pre_trade_checks(trades, positions):
             return
 
+        self.messages.append(f'{u.get_now()} checking instruments')
         for i in defs.instruments:
             inst_trades = u.get_trades_by_instrument(trades, i)
             if len(inst_trades) == 0:
@@ -283,6 +302,42 @@ class Manager():
                 spread=99
             )
 
+    def update_trailing(self, inst, bid, ask):
+        for t in self.account.trades:
+            if t.instrument != inst:
+                continue
+
+            if t.id in self.trailingorders:
+                for o in self.account.orders:
+                    if t.stopLossOrderID == o.id:
+                        oldstop = o.price
+            
+                piploc = u.get_piplocation(inst, self.insts)
+
+                if t.currentUnits > 0:
+                    pl_pips = bid - t.price
+                    if ask > t.prev_ask:
+                        dif = ask - t.prev_ask
+                        newstop = oldstop + dif
+                        self.move_stop(t.id, newstop)
+                        t.prev_bid = bid
+                        t.prev_ask = ask
+
+                if t.currentUnits < 0:
+                    pl_pips = t.price - ask
+                    if bid < t.prev_bid:
+                        dif = t.prev_bid - bid
+                        newstop = oldstop - dif
+                        self.move_stop(t.id, newstop)
+                        t.prev_bid = bid
+                        t.prev_ask = ask                        
+
+            if t.id not in self.trailingorders:
+                self.trailingorders.append(t.id)
+                t.prev_bid = bid
+                t.prev_ask = ask
+
+
     def run_pricestream(self):
         ctxs = v20.Context(
             hostname='stream-fxpractice.oanda.com', token=defs.key)
@@ -292,10 +347,11 @@ class Manager():
         self.messages.append('price stream started')
         for typ, data in response.parts():
             if typ == "pricing.ClientPrice":
-                self.set_price_table(
-                    data.instrument,
-                    data.bids[0].price,
-                    data.asks[0].price)
+                i = data.instrument
+                bid = data.bids[0].price
+                ask = data.asks[0].price
+                self.set_price_table(i, bid, ask)
+                self.update_trailing(i, bid, ask)
 
 
 if __name__ == "__main__":

@@ -24,7 +24,8 @@ class TradeManager():
 
         self.mgr = m.Manager(ctx, defs.ACCOUNT_ID,
                              run_stream=True,
-                             ms_queue=self.messages)
+                             ms_queue=self.messages,
+                             account=self.account)
 
         # start threads
         schedule.every(3).minutes.do(
@@ -50,10 +51,11 @@ class TradeManager():
             self.manage_trades()
 
             if self.account.unrealizedPL > (self.account.NAV*0.002):
-                self.messages.append('Profit realization')
+                msg = f'Profit realization above: {self.account.NAV*0.002:.4f}'
+                self.messages.append(msg)
                 self.mgr.realize_profit(ratio=.2)
 
-            time.sleep(30)
+            time.sleep(15)
 
     def show_trades(self, w):
         self.show_table_head(w)
