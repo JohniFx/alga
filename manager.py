@@ -65,11 +65,39 @@ class Manager():
         # trailingStopLoss=ts)
         self.close_trade(t.id, int(abs(t.currentUnits)/5))
 
+    def pre_trade_checks(self, trades, positions) -> bool:
+        # max_open_trades
+        if len(trades) >= defs.global_params['max_open_trades']:
+            return False
+
+        # max_open_instruments
+        openinstruments = []
+        for o in trades:
+            openinstruments.append(o.instrument)
+        if len(openinstruments) >= defs.global_params['max_open_instruments']:
+            return False
+
+        # max_open_trades_per_instrument
+        max_o_i = defs.global_params['max_open_trades_per_instrument']
+        for p in positions:
+            if p.long.tradeIDs is not None:
+                if len(p.long.tradeIDs) > max_o_i:
+                    return False
+            if p.short.tradeIDs is not None:
+                if len(p.short.tradeIDs) > max_o_i:
+                    return False
+
+        return True
+
     def check_instruments(self):
         self.messages.append(f'{u.get_now()} checking instruments')
 
         trades = self.ctx.trade.list_open(self.accountid).get('trades')
         trades.sort(key=lambda x: (x.instrument, x.price))
+        positions = self.ctx.position.list_open(defs.ACCOUNT_ID).get('positions')
+
+        if not self.pre_trade_checks(trades, positions):
+            return
 
         for i in defs.instruments:
             inst_trades = u.get_trades_by_instrument(trades, i)
@@ -114,8 +142,7 @@ class Manager():
         tp = defs.global_params['tp']
         ac = self.ctx.account.summary(self.accountid).get('account')
         units = int(ac.marginAvailable/4)
-        if positioning == 0:  # azaz nincs az instrumentumon trade
-            units = 10  # buoy
+        
         if signaltype == 'XL':
             units *= 2
 

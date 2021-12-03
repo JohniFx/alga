@@ -38,14 +38,10 @@ class Analyser():
         intercept = z[1]
         return slope, intercept
 
-    def add_mom(self, df, period=10):
-        df['mom'] = df.mid_c.diff(period)
+    def add_mom(self, df, n=10):
+        df['mom'] = df.mid_c.diff(n)
         df['mom_pos'] = np.sign(df.mom)
         df['mom_slope'] = np.sign(df.mom.diff(1))
-        return df
-
-    def add_roc(self, df, period=10):
-        df['roc'] = df.mid_c.diff(period)
         return df
 
     def pivot_points(self, inst, count=2, tf='D'):
@@ -155,6 +151,11 @@ class Analyser():
         lo = df.mid_l.rolling(window).min()
         df['STO_K'] = (df.mid_c - lo)*100/(hi - lo)
         df['STO_D'] = df['STO_K'].rolling(roll).mean()
+    
+    def get_stop(self, df, signal):
+        if signal == 1:
+            pass
+
 
     def get_signal(self, inst, count=15, tf='M5'):
         df = self.get_candles(inst, count, tf)
@@ -178,8 +179,8 @@ class Analyser():
         signal2 = df.signal2.iloc[-1]
 
         # Strategy3
-        sc1 = (df.STO_K > 86) & (df.lr_slope < 0)
-        sc2 = (df.STO_K < 14) & (df.lr_slope > 0)
+        sc1 = (df.STO_K > 86) & (df.lr_slope > 0)
+        sc2 = (df.STO_K < 14) & (df.lr_slope < 0)
         df['signal_stoch'] = np.where(sc1, -1, 0)
         df['signal_stoch'] = np.where(sc2, 1, df['signal_stoch'])
         signal3 = df.signal_stoch.iloc[-1]
