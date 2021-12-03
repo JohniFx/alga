@@ -9,7 +9,7 @@ pyversions](https://img.shields.io/pypi/pyversions/ansicolortags.svg)](https://p
 commit](https://badgen.net/github/last-commit/Naereen/Strapdown.js)](https://GitHub.com/Naereen/StrapDown.js/commit/)
 
 [![GitHub
-commits](https://badgen.net/github/commits/Naereen/Strapdown.js)](https://GitHub.com/Naereen/StrapDown.js/commit/)
+commits](https://github.com/JohniFx/alga/commits)](https://github.com/JohniFx/alga/commits)
 
 This repo uses oanda v20 API as a basis for a forex trading algo. The focus is not on some magic indicators but to implement more and more general trading rules like " do not add to loser" or "let your winners run and cut your losses quickly".
 
