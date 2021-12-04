@@ -92,7 +92,7 @@ def show_spread(w, row: int, col: int, spread: float, limit: float):
         w.addstr(row, col, f'{spread:.5f}', curses.color_pair(4))
 
 
-if __name__ == ('__main__'):
+if __name__ == '__main__':
     try:
         curses.wrapper(curses_main)
     except KeyboardInterrupt:
