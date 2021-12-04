@@ -6,9 +6,11 @@ import threading
 
 insts = []
 
+
 def run_threaded(job_func, args=[]):
     t = threading.Thread(target=job_func, args=args)
     t.start()
+
 
 def get_instruments(ctx, accountid):
     insts = ctx.account.instruments(accountid).get('instruments')
@@ -67,7 +69,7 @@ def get_trade_info(t: v20.trade.Trade) -> str:
     if t.stopLossOrder is None:
         nsm = 'NO STOP'
         msg += f'{nsm:>10}'
-        msg += f' **NO STOP** '
+        msg += ' **NO STOP** '
     else:
         msg += f'{t.stopLossOrder.price:>10.4f}'
 
@@ -110,7 +112,6 @@ def get_trades_by_instrument(trades, instrument):
 
 
 def check_breakeven_for_position(trades, instrument):
-    # print('breakevencheck: ', instrument)
     all_breakeven = []
     for t in trades:
         if t.instrument == instrument:
@@ -123,9 +124,6 @@ def check_breakeven_for_position(trades, instrument):
 
 
 if __name__ == "__main__":
-    #Testing util functions
-    import v20
-    import defs
     ctx = v20.Context(hostname=defs.HOSTNAME, token=defs.key)
     ctx.set_header(key='Authorization', value=defs.key)
     inst = get_instruments(ctx, defs.ACCOUNT_ID)

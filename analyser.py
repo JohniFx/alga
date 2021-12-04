@@ -151,11 +151,10 @@ class Analyser():
         lo = df.mid_l.rolling(window).min()
         df['STO_K'] = (df.mid_c - lo)*100/(hi - lo)
         df['STO_D'] = df['STO_K'].rolling(roll).mean()
-    
+
     def get_stop(self, df, signal):
         if signal == 1:
             pass
-
 
     def get_signal(self, inst, count=15, tf='M5'):
         df = self.get_candles(inst, count, tf)
@@ -165,56 +164,62 @@ class Analyser():
         self.add_stochastic(df, 10, 3)
 
         # Strategy1
-        cd1 = (df.hilo > 0) & (df.mom_pos > 0) & (df.mom_slope > 0) & (df.lr_slope > 0)
-        cd2 = (df.hilo < 0) & (df.mom_pos < 0) & (df.mom_slope < 0) & (df.lr_slope < 0)
+        cd1 = (df.hilo > 0) & (df.mom_pos > 0) & (
+            df.mom_slope > 0) & (df.lr_slope > 0)
+        cd2 = (df.hilo < 0) & (df.mom_pos < 0) & (
+            df.mom_slope < 0) & (df.lr_slope < 0)
         df['signal'] = np.where(cd1, 1, 0)
         df['signal'] = np.where(cd2, -1, df['signal'])
-        signal1 = df.signal.iloc[-1]
+        s1 = df.signal.iloc[-1]
 
         # Strategy2
-        c1 = (df.mom < df.mom_q05) & (df.mom_slope > 0) & (df.mom_slope.shift(1) > 0)
-        c2 = (df.mom > df.mom_q95) & (df.mom_slope < 0) & (df.mom_slope.shift(1) < 0)
+        c1 = (df.mom < df.mom_q05) & (
+            df.mom_slope > 0) & (df.mom_slope.shift(1) > 0)
+        c2 = (df.mom > df.mom_q95) & (
+            df.mom_slope < 0) & (df.mom_slope.shift(1) < 0)
         df['signal2'] = np.where(c1, 1, 0)
         df['signal2'] = np.where(c2, -1, df['signal2'])
-        signal2 = df.signal2.iloc[-1]
+        s2 = df.signal2.iloc[-1]
 
         # Strategy3
         sc1 = (df.STO_K > 86) & (df.lr_slope > 0)
         sc2 = (df.STO_K < 14) & (df.lr_slope < 0)
         df['signal_stoch'] = np.where(sc1, -1, 0)
         df['signal_stoch'] = np.where(sc2, 1, df['signal_stoch'])
-        signal3 = df.signal_stoch.iloc[-1]
+        s3 = df.signal_stoch.iloc[-1]
 
         # Strategy4
-        cd1 = (df.hilo > 0) & (df.mom_pos < 0) & (df.mom_slope > 0) & (df.lr_slope > 0)
-        cd2 = (df.hilo < 0) & (df.mom_pos > 0) & (df.mom_slope < 0) & (df.lr_slope < 0)
+        cd1 = (df.hilo > 0) & (df.mom_pos < 0) & (
+            df.mom_slope > 0) & (df.lr_slope > 0)
+        cd2 = (df.hilo < 0) & (df.mom_pos > 0) & (
+            df.mom_slope < 0) & (df.lr_slope < 0)
         df['s4'] = np.where(cd1, 1, 0)
         df['s4'] = np.where(cd2, -1, df['s4'])
-        s4 = 0 #df.s4.iloc[-1]
+        s4 = 0
 
         signals = dict(
             inst=inst,
-            s1=signal1,
-            s2=signal2,
-            s3=signal3,
+            s1=s1,
+            s2=s2,
+            s3=s3,
             s4=s4,
             lrg=df.lr_slope.iloc[-1],
             sto=df.STO_K.iloc[-1].round(2)
         )
 
         self.messages.append(str(signals))
-        if (signal1 == signal2) and (signal2 == signal3) and (signal3 == df.lr_slope.iloc[-1]):
+        if (s1 == s2) and (s2 == s3) and (s3 == df.lr_slope.iloc[-1]):
             print('** supersignal **')
-            return signal1, 'XL'
+            return s1, 'XL'
 
-        if signal3 != 0:
-            return signal3, 'S3'
-        if signal2 != 0:
-            return signal2, 'S2'
+        if s3 != 0:
+            return s3, 'S3'
+        if s2 != 0:
+            return s2, 'S2'
         if s4 != 0:
             return s4, 'S4'
-        if signal1 != 0:
-            return signal1, 'S1'
+        if s1 != 0:
+            return s1, 'S1'
 
         return 0, ''
 

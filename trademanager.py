@@ -81,7 +81,7 @@ class TradeManager():
             piploc = utils.get_piplocation(t.instrument, self.mgr.insts)
             if t.currentUnits > 0:
                 pl_pips = bid - t.price
-            else:            
+            else:
                 pl_pips = t.price - ask
             pips = pl_pips / piploc
 
@@ -99,9 +99,6 @@ class TradeManager():
             w.addstr(i, 0, msg)
         i += 2
         self.show_messages(w, row=i)
-
-    def manage_positions(self):
-        pass
 
     def manage_trades(self):
 
@@ -154,7 +151,6 @@ class TradeManager():
             2, 0, f'{"id":>6} {"ccy":>7} {"units":>5} {"Entry":>8}'
             + f' {"SL":>8} {"TS":>8} {"unr.PL":>8} {"rea.PL":>8}'
             + f' {"dist":>8} {"bid":>9} {"ask":>9} {"pips":>8}')
-        
         w.addstr(3, 0, f'{"-"*6:>6} {"-"*7:>7} {"-"*5:>5}'
                  + f' {"-"*8:>8} {"-"*8} {"-"*8} {"-"*8}'
                  + f' {"-"*8} {"-"*8} {"-"*9} {"-"*9} {"-"*8}')

@@ -8,12 +8,12 @@ import v20
 
 class Manager():
     def __init__(
-        self, 
-        ctx, 
-        accountid, 
-        run_stream=False, 
-        ms_queue=None,
-        account = None):
+            self,
+            ctx,
+            accountid,
+            run_stream=False,
+            ms_queue=None,
+            account=None):
         self.ctx = ctx
         self.messages = ms_queue
         self.accountid = accountid
@@ -72,7 +72,7 @@ class Manager():
         )
         # trailingStopLoss=ts)
         self.close_trade(t.id, int(abs(t.currentUnits)/5))
-    
+
     def move_stop(self, tradeid, newstop):
         sl = dict(
             price=str(f'{newstop:.5f}'),
@@ -112,7 +112,8 @@ class Manager():
     def check_instruments(self):
         trades = self.ctx.trade.list_open(self.accountid).get('trades')
         trades.sort(key=lambda x: (x.instrument, x.price))
-        positions = self.ctx.position.list_open(defs.ACCOUNT_ID).get('positions')
+        positions = self.ctx.position.list_open(
+            defs.ACCOUNT_ID).get('positions')
 
         if not self.pre_trade_checks(trades, positions):
             return
@@ -161,13 +162,13 @@ class Manager():
         tp = defs.global_params['tp']
         ac = self.ctx.account.summary(self.accountid).get('account')
         units = int(ac.marginAvailable/4)
-        
+
         if signaltype == 'XL':
             units *= 2
 
         if signal == 1:
             entry = ask
-            stopprice = ask - sl*piploc # spread excluded if ask - SL
+            stopprice = ask - sl*piploc  # spread excluded if ask - SL
             profitPrice = ask + tp*piploc
         elif signal == -1:
             units *= -1
@@ -311,11 +312,8 @@ class Manager():
                 for o in self.account.orders:
                     if t.stopLossOrderID == o.id:
                         oldstop = o.price
-            
-                piploc = u.get_piplocation(inst, self.insts)
 
                 if t.currentUnits > 0:
-                    pl_pips = bid - t.price
                     if ask > t.prev_ask:
                         dif = ask - t.prev_ask
                         newstop = oldstop + dif
@@ -324,19 +322,17 @@ class Manager():
                         t.prev_ask = ask
 
                 if t.currentUnits < 0:
-                    pl_pips = t.price - ask
                     if bid < t.prev_bid:
                         dif = t.prev_bid - bid
                         newstop = oldstop - dif
                         self.move_stop(t.id, newstop)
                         t.prev_bid = bid
-                        t.prev_ask = ask                        
+                        t.prev_ask = ask
 
             if t.id not in self.trailingorders:
                 self.trailingorders.append(t.id)
                 t.prev_bid = bid
                 t.prev_ask = ask
-
 
     def run_pricestream(self):
         ctxs = v20.Context(
