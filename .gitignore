@@ -1,4 +1,4 @@
 config.ini
 defs.py
-data/
+data/*
 
