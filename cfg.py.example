@@ -1,0 +1,19 @@
+import v20
+
+API_KEY = "YOUR API KEY"
+ACCOUNT_ID = "YOUR ACCOUNT ID"
+HOSTNAME   = "api-fxpractice.oanda.com"
+STREAMHOST = "stream-fxpractice.oanda.com"
+key = f'Bearer {API_KEY}'
+
+# global ctx
+ctx = v20.Context(hostname=HOSTNAME, token=key)
+ctx.set_header(key='Authorization', value=key)
+
+# global ctxs
+ctxs = v20.Context(hostname=STREAMHOST, token=key)
+ctxs.set_header(key='Authorization', value=key)
+
+# global account_id 
+account_id = ACCOUNT_ID
+
