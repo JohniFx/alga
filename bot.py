@@ -3,7 +3,6 @@ import os
 import schedule
 from time import sleep
 import v20
-import threading
 import analyser
 import defs
 import manager
@@ -16,8 +15,7 @@ class TradingBot():
     def __init__(self) -> None:
         self.ctx = v20.Context(hostname=defs.HOSTNAME, token=defs.key)
         self.ctx.set_header(key='Authorization', value=defs.key)
-        self.accountid = defs.ACCOUNT_ID
-        # self.m = manager.Manager(self.ctx, self.accountid)
+        self.accountid = defs.ACCOUNT_ID        
 
     def set_schedule(self, func, start, stop, step):
         for i in range(start, stop, step):
@@ -26,8 +24,6 @@ class TradingBot():
 
     def run(self):
         schedule.clear()
-        # self.set_schedule(self.m.check_instruments, 0, 60, 5)
-
 
         schedule.every().hour.at('54:10').do(
             u.run_threaded, self.fetch_data, args=['M5', 100])
@@ -56,16 +52,6 @@ class TradingBot():
         with open('kpi_data.json', 'w') as write_file:
             json.dump(kpi_data, write_file, indent=2)
         print(u.get_now(), 'kpi data updated')
-
-    def reload_modules(self):
-        # print(u.get_now(), 'reloading modules')
-        import importlib
-        importlib.reload(defs)
-        importlib.reload(manager)
-        importlib.reload(analyser)
-
-        self.m = manager.Manager(self.ctx, self.accountid)
-        self.run()
 
 
 if __name__ == '__main__':
