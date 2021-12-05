@@ -1,32 +1,30 @@
 import cfg
 import trader
 import quant
-
 from datetime import datetime
 
 class Main():
     def __init__(self) -> None:
-        
+        # update from lnx
+
         # background activitites
         cfg.price_observers.append(self)
         cfg.transaction_observers.append(self)
         print(cfg.account.balance)
-        
+
         # update_kpi()
-        # update_tradeable_instruments()
         # check_instruments
-        
         # manage_positions
         # show_account
-        
+
     def on_tick(self, cp):
         msg = f"{datetime.now().strftime('%H:%M:%S')}"
         msg+= f" {cp['i']}: {cp['bid']:.5f} / {cp['ask']:.5f}"
         print(msg)
-        
+
     def on_data(self, data):
         print(data)
-        
+
     def schedule_tasks(self):
         pass
     
