@@ -27,10 +27,8 @@ class Main():
 
     def schedule_tasks(self):
         pass
-    
-    def poll_account_update(self):
-        pass
-        
+
+
     def show_prices(self):
         r = cfg.ctx.pricing.get(cfg.ACCOUNT_ID, instruments='EUR_USD')
         prices = r.get('prices')
