@@ -1,6 +1,6 @@
 # alga: 
 
-![GitHub commit activity](https://img.shields.io/github/commit-activity/w/johnifx/alga) ![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/johnifx/alga)![GitHub all releases](https://img.shields.io/github/downloads/johnifx/alga/total)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/w/johnifx/alga) ![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/johnifx/alga) ![GitHub all releases](https://img.shields.io/github/downloads/johnifx/alga/total)
 
 This repo uses oanda v20 API as a basis for a forex trading algo. The focus is not on some magic indicators but to implement more and more general trading rules like " do not add to loser" or "let your winners run and cut your losses quickly".
 
