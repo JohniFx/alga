@@ -1,0 +1,88 @@
+import v20
+import threading
+import time
+
+# rename this file to cfg.py
+
+API_KEY = "YOUR API KEY"
+ACCOUNT_ID = "YOUR ACCOUNT ID"
+HOSTNAME   = "api-fxpractice.oanda.com"
+STREAMHOST = "stream-fxpractice.oanda.com"
+key = f'Bearer {API_KEY}'
+
+
+# global ctx
+ctx = v20.Context(hostname=HOSTNAME, token=key)
+ctx.set_header(key='Authorization', value=key)
+
+# global ctxs
+ctxs = v20.Context(hostname=STREAMHOST, token=key)
+ctxs.set_header(key='Authorization', value=key)
+
+# global account_id 
+def get_account():
+    response = ctx.account.get(ACCOUNT_ID)
+    return response.get('account'), response.get('lastTransactionID')
+    
+account, lastTransactionID = get_account()
+
+price_table = {}
+instruments = ctx.account.instruments(ACCOUNT_ID).get('instruments')
+tradeable_instruments = {i.name:i.dict() for i in instruments}
+ 
+price_observers = []
+transaction_observers = []
+
+global_params = dict(
+    tp=10,
+    sl=10,
+    ts=11)
+
+def notify_price_observers(cp):
+    for o in price_observers:
+        o.on_tick(cp)
+
+def notify_transaction_observers(data):
+    for o in transaction_observers:
+        o.on_data(cp)
+
+def run_price_stream():
+    print('running price stream')
+    response = ctxs.pricing.stream(ACCOUNT_ID, instruments=inst_list)
+    for typ, data in response.parts():
+        if typ == "pricing.ClientPrice":
+            cp = dict(
+                i=data.instrument,
+                bid=data.bids[0].price,
+                ask=data.asks[0].price
+            )
+            notify_price_observers(cp)
+
+def run_transaction_stream():
+    print('running transaction stream')
+    response = ctxs.transaction.stream(ACCOUNT_ID)
+    for typ, data in response.parts():
+        if typ == "":
+            notify_transaction_observers(data)
+
+def run_account_update(account, lastTransactionID):
+    _lastId = lastTransactionID
+    
+    while True:
+        r = ctx.account.changes(
+            ACCOUNT_ID,
+            sinceTransactionID=_lastId)
+        changes = r.get('changes')
+        state = r.get('state')
+        _lastId = r.get('lastTransactionID')
+        apply_changes(account, changes)
+        time.sleep(15)
+
+def apply_changes(account, changes):
+    print('applying changes on account')
+    print(f'{account.NAV} \n{changes}')
+        
+threading.Thread(target=run_price_stream).start()
+threading.Thread(target=run_transaction_stream).start()
+threading.Thread(target=run_account_update, args=[account, lastTransactionID]).start()
+
