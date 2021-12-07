@@ -62,14 +62,6 @@ if __name__ == '__main__':
     # print('Kpi update')
     # t.update_kpi_file()
     try:
-        # t.m.check_instruments()
         t.run()
     except KeyboardInterrupt:
         sys.exit(0)
-    except Exception as e:
-        print('error + restart', e)
-        if t is not None:
-            t.run()
-        else:
-            print('object meghalt.. restart:')
-            os.execv(sys.executable, ['python3'] + sys.argv)
