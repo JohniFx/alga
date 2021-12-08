@@ -1,6 +1,6 @@
 config.ini
 defs.py
 data/*
-.vscode/
+.vscode/*
 cfg.py
 __pycache__/*

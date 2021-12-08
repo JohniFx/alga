@@ -1,17 +1,13 @@
 import cfg
 import trader
 import quant
-
 from datetime import datetime
 
 class Main():
     def __init__(self) -> None:
-
-        # background activitites
         cfg.price_observers.append(self)
         cfg.transaction_observers.append(self)
-        print(cfg.account.balance)
-
+        cfg.account_observers.append(self)
         # update_kpi()
         # update_tradeable_instruments()
         # check_instruments
@@ -25,14 +21,17 @@ class Main():
         print(msg)
 
     def on_data(self, data):
-        msg =f"{datetime.now().strftime('%H:%M:%S')}"
-        print(msg, data)
+        msg = f"{datetime.now().strftime('%H:%M:%S')}"
+        inst=''
+        if hasattr(data,'instrument'):
+            inst =  data.instrument
+        msg+= f" {data.id} {data.type} {data.reason} {inst}"
+        print(msg)
 
-    def schedule_tasks(self):
-        pass
-
-    def poll_account_update(self):
-        pass
+    def on_account_changes(self):
+        msg = f"{datetime.now().strftime('%H:%M:%S')}"
+        msg+= f" {cfg.account.balance} {cfg.account.unrealizedPL} t:{len(cfg.account.trades)} o:{len(cfg.account.orders)} p:{len(cfg.account.positions)}"
+        print(msg)
 
     def show_prices(self):
         r = cfg.ctx.pricing.get(cfg.ACCOUNT_ID, instruments='EUR_USD')
