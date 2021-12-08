@@ -3,4 +3,4 @@ defs.py
 data/*
 .vscode/
 cfg.py
-
+__pycache__/*
