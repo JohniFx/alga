@@ -10,6 +10,13 @@ Some additional ipynb jupyter notebook files also included. They contain backgro
 
 Unfortunately the algo is not successful, still producing losses, so it may be called loss generator or account destroyer.  I have way to many ideas to implement but time is a constraint.
 
+2021-12-08 comments
+
 cfg.py: this is a general purpose file. it runs the streaming prices, transactions and account polling in the background and also provides variables available for all other classes.
 
 main.py: this is where account management happens, trader.py this class is responsible for the trading functions, quant.py this is the market based analysis, technical analysis and signal generator.
+
+The application was intended to run in the terminal, in my case in tmux.
+
+
+![2021-12-08_alga](https://user-images.githubusercontent.com/70256142/145249113-bd38e462-3294-41a2-86ae-fa0a97743b0b.PNG)
