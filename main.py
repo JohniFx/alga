@@ -30,8 +30,21 @@ class Main():
 
     def on_account_changes(self):
         msg = f"{datetime.now().strftime('%H:%M:%S')}"
-        msg+= f" {cfg.account.balance} {cfg.account.unrealizedPL} t:{len(cfg.account.trades)} o:{len(cfg.account.orders)} p:{len(cfg.account.positions)}"
+        msg+= f" {cfg.account.balance}"
+        msg+= f" {cfg.account.unrealizedPL}"
+        msg+= f" t:{len(cfg.account.trades)}"
+        msg+= f" o:{len(cfg.account.orders)}"
+        msg+= f" p:{self.get_open_positions()}"
         print(msg)
+
+
+    def get_open_positions(self):
+        openpos = []
+        for p in cfg.account.positions:
+            if p.marginUsed is not None:
+                openpos.append(p)
+        return len(openpos)
+
 
     def show_prices(self):
         r = cfg.ctx.pricing.get(cfg.ACCOUNT_ID, instruments='EUR_USD')

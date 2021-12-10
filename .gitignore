@@ -4,3 +4,4 @@ data/*
 .vscode/*
 cfg.py
 __pycache__/*
+/__pychace__

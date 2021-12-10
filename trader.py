@@ -6,15 +6,9 @@ class Trader():
         pass
 
     def check_instruments(self):
-        trades = self.ctx.trade.list_open(self.accountid).get('trades')
+        trades = cfg.account.trades
         trades.sort(key=lambda x: (x.instrument, x.price))
-        positions = self.ctx.position.list_open(
-            defs.ACCOUNT_ID).get('positions')
 
-        if not self.pre_trade_checks(trades, positions):
-            return
-
-        self.messages.append(f'{u.get_now()} checking instruments')
         for i in defs.instruments:
             inst_trades = u.get_trades_by_instrument(trades, i)
             if len(inst_trades) == 0:
@@ -141,3 +135,8 @@ class Trader():
         if response.status != 201:
             print(response)
             print(response.body)
+
+
+if __name__ == '__main__':
+    t= Trader()
+    t.check_instruments()
