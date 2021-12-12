@@ -138,5 +138,5 @@ class Trader():
 
 
 if __name__ == '__main__':
-    t= Trader()
+    t = Trader()
     t.check_instruments()

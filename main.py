@@ -17,15 +17,15 @@ class Main():
 
     def on_tick(self, cp):
         msg = f"{datetime.now().strftime('%H:%M:%S')}"
-        msg+= f" {cp['i']}: {cp['bid']:.5f} / {cp['ask']:.5f}"
+        msg += f" {cp['i']}: {cp['bid']:.5f} / {cp['ask']:.5f}"
         print(msg)
 
     def on_data(self, data):
         msg = f"{datetime.now().strftime('%H:%M:%S')}"
-        inst=''
-        if hasattr(data,'instrument'):
-            inst =  data.instrument
-        msg+= f" {data.id} {data.type} {data.reason} {inst}"
+        inst = ''
+        if hasattr(data, 'instrument'):
+            inst = data.instrument
+        msg += f" {data.id} {data.type} {data.reason} {inst}"
         print(msg)
 
     def on_account_changes(self):
@@ -37,14 +37,12 @@ class Main():
         msg+= f" p:{self.get_open_positions()}"
         print(msg)
 
-
     def get_open_positions(self):
         openpos = []
         for p in cfg.account.positions:
             if p.marginUsed is not None:
                 openpos.append(p)
         return len(openpos)
-
 
     def show_prices(self):
         r = cfg.ctx.pricing.get(cfg.ACCOUNT_ID, instruments='EUR_USD')
