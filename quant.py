@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import json
 
-
+#finally a change
 class Quant():
     def __init__(self) -> None:
         pass
