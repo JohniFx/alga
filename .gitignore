@@ -4,4 +4,7 @@ data/*
 .vscode/*
 cfg.py
 __pycache__/*
-/__pychace__
+/__pycache__
+.ipynb*
+.ipynb_checkpoints/*
+notebook/__pycache__/*

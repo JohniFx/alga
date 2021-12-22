@@ -1,5 +1,7 @@
 import cfg
 import v20
+import utils as u
+import threading
 
 class Trader():
     def __init__(self) -> None:
@@ -9,11 +11,12 @@ class Trader():
         trades = cfg.account.trades
         trades.sort(key=lambda x: (x.instrument, x.price))
 
-        for i in defs.instruments:
+        for i in cfg.instruments:
+   
             inst_trades = u.get_trades_by_instrument(trades, i)
             if len(inst_trades) == 0:
-                threading.Thread(target=self.check_instrument,
-                                 args=[i, 0]).start()
+                # threading.Thread(target=self.check_instrument,args=[i, 0]).start()
+                self.check_instrument(i)
             else:
                 if u.check_breakeven_for_position(trades, i):
                     # print(i, 'be')
@@ -25,21 +28,25 @@ class Trader():
                             target=self.check_instrument, args=[i, -1]).start()
 
     def check_instrument(self, inst, positioning=None) -> str:
+        print(f'{inst} check instrument {cfg.price_table[inst]}')
         try:
             msg = f' stream:{inst}'
-            msg += f' B:{self.pricetable[inst]["bid"]:>8.5}'
-            msg += f' A:{self.pricetable[inst]["ask"]:>8.5}'
-            msg += f' S:{self.pricetable[inst]["spread"]:.5f}'
-            msg += f' C:{self.pricetable[inst]["count"]:>5}'
+            msg += f' B:{cfg.price_table[inst]["bid"]:>8.5}'
+            msg += f' A:{cfg.price_table[inst]["ask"]:>8.5}'
+            msg += f' S:{cfg.price_table[inst]["spread"]:.5f}'
+            msg += f' C:{cfg.price_table[inst]["count"]:>5}'
+            print(msg)
         except KeyError:
+            print(f'keyerror: {inst}')
             return
 
         piploc = u.get_piplocation(inst, self.insts)
-        spread = self.pricetable[inst]["spread"] / piploc
-        bid = self.pricetable[inst]["bid"]
-        ask = self.pricetable[inst]["ask"]
+        spread = cfg.price_table[inst]["spread"] / piploc
+        bid = cfg.price_table[inst]["bid"]
+        ask = cfg.price_table[inst]["ask"]
         # pre-trade check
-        if spread > defs.global_params['max_spread'] or spread == 0:
+        if spread > cfg.global_params['max_spread'] or spread == 0:
+            print(f'{inst} spread check fail')
             return None
 
         signal, signaltype = self.a.get_signal(inst, tf='M5')
@@ -48,8 +55,8 @@ class Trader():
         if (signal, positioning) not in valid:
             return None
 
-        sl = defs.global_params['sl']
-        tp = defs.global_params['tp']
+        sl = cfg.global_params['sl']
+        tp = cfg.global_params['tp']
         ac = self.ctx.account.summary(self.accountid).get('account')
         units = int(ac.marginAvailable/4)
 
@@ -81,7 +88,7 @@ class Trader():
 
     def place_market(self, inst, units, stopPrice, profitPrice=None, id='0'):
         prec = u.get_displayprecision(inst, self.insts)
-        # gp_ts = defs.global_params['ts']
+        # gp_ts = cfg.global_params['ts']
         # tsdist = gp_ts * u.get_piplocation(inst, self.insts)
 
         sl_on_fill = dict(timeInForce='GTC', price=f'{stopPrice:.{prec}f}')
@@ -105,7 +112,7 @@ class Trader():
 
     def place_limit(self, inst, units, entryPrice, stopPrice, profitPrice):
         prec = u.get_displayprecision(inst, self.insts)
-        ts_dist = (defs.global_params['ts']
+        ts_dist = (cfg.global_params['ts']
                    * u.get_piplocation(inst, self.insts))
 
         sl_on_fill = dict(timeInForce='GTC', price=f'{stopPrice:.{prec}f}')

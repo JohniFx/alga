@@ -8,12 +8,15 @@ class Main():
         cfg.price_observers.append(self)
         cfg.transaction_observers.append(self)
         cfg.account_observers.append(self)
+        self.t = trader.Trader()
+        self.t.check_instruments()
         # update_kpi()
         # update_tradeable_instruments()
-        # check_instruments
+        # check_instruments()
 
         # manage_positions
         # show_account
+
 
     def on_tick(self, cp):
         msg = f"{datetime.now().strftime('%H:%M:%S')}"

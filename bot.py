@@ -57,10 +57,10 @@ class TradingBot():
 if __name__ == '__main__':
     t = TradingBot()
     # print('initial data update')
-    # t.fetch_data()
-    # t.fetch_data(tf='D', count=10)
+    t.fetch_data()
+    t.fetch_data(tf='D', count=10)
     # print('Kpi update')
-    # t.update_kpi_file()
+    t.update_kpi_file()
     try:
         t.run()
     except KeyboardInterrupt:

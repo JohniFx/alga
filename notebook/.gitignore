@@ -1,4 +1,7 @@
 config.ini
 defs.py
+.ipynb*
+_pycache_*
+
 
 

@@ -1,6 +1,6 @@
 from datetime import datetime
 import pickle
-import defs
+#import defs
 import v20
 import threading
 
