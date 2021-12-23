@@ -2,17 +2,18 @@ import cfg
 import v20
 import utils as u
 import threading
+from time import sleep
 
 class Trader():
     def __init__(self) -> None:
-        pass
+        sleep(3)
+        print(cfg.price_table)
 
     def check_instruments(self):
         trades = cfg.account.trades
         trades.sort(key=lambda x: (x.instrument, x.price))
 
         for i in cfg.instruments:
-   
             inst_trades = u.get_trades_by_instrument(trades, i)
             if len(inst_trades) == 0:
                 # threading.Thread(target=self.check_instrument,args=[i, 0]).start()
@@ -28,26 +29,6 @@ class Trader():
                             target=self.check_instrument, args=[i, -1]).start()
 
     def check_instrument(self, inst, positioning=None) -> str:
-        print(f'{inst} check instrument {cfg.price_table[inst]}')
-        try:
-            msg = f' stream:{inst}'
-            msg += f' B:{cfg.price_table[inst]["bid"]:>8.5}'
-            msg += f' A:{cfg.price_table[inst]["ask"]:>8.5}'
-            msg += f' S:{cfg.price_table[inst]["spread"]:.5f}'
-            msg += f' C:{cfg.price_table[inst]["count"]:>5}'
-            print(msg)
-        except KeyError:
-            print(f'keyerror: {inst}')
-            return
-
-        piploc = u.get_piplocation(inst, self.insts)
-        spread = cfg.price_table[inst]["spread"] / piploc
-        bid = cfg.price_table[inst]["bid"]
-        ask = cfg.price_table[inst]["ask"]
-        # pre-trade check
-        if spread > cfg.global_params['max_spread'] or spread == 0:
-            print(f'{inst} spread check fail')
-            return None
 
         signal, signaltype = self.a.get_signal(inst, tf='M5')
 
