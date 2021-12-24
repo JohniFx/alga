@@ -13,11 +13,12 @@ class Trader():
         trades.sort(key=lambda x: (x.instrument, x.price))
 
         for i in cfg.instruments:
+            # TODO: utils nem kell helyette cfg.instruments, cfg.account
             inst_trades = u.get_trades_by_instrument(trades, i)
             if len(inst_trades) == 0:
-                # threading.Thread(target=self.check_instrument,args=[i, 0]).start()
                 self.check_instrument(i)
             else:
+                #TODO: utils átrakni cfg-be
                 if u.check_breakeven_for_position(trades, i):
                     # print(i, 'be')
                     if inst_trades[0].currentUnits > 0:
@@ -28,7 +29,6 @@ class Trader():
                             target=self.check_instrument, args=[i, -1]).start()
 
     def check_instrument(self, inst, positioning=None) -> str:
-
         signal, signaltype = self.a.get_signal(inst, tf='M5')
 
         valid = [(-1, -1), (-1, 0), (1, 0), (1, 1)]
@@ -37,6 +37,7 @@ class Trader():
 
         sl = cfg.global_params['sl']
         tp = cfg.global_params['tp']
+        #TODO: lekérdezni nem kell helyette cfg.account....
         ac = self.ctx.account.summary(self.accountid).get('account')
         units = int(ac.marginAvailable/4)
 
@@ -67,9 +68,9 @@ class Trader():
             self.messages.append(msg)
 
     def place_market(self, inst, units, stopPrice, profitPrice=None, id='0'):
-        prec = u.get_displayprecision(inst, self.insts)
-        # gp_ts = cfg.global_params['ts']
-        # tsdist = gp_ts * u.get_piplocation(inst, self.insts)
+        prec = cfg.instruments[inst]['displayPrecision']
+        gp_ts = cfg.global_params['ts']
+        tsdist = gp_ts * u.get_piplocation(inst, self.insts)
 
         sl_on_fill = dict(timeInForce='GTC', price=f'{stopPrice:.{prec}f}')
         tp_on_fill = dict(timeInForce='GTC', price=f'{profitPrice:.{prec}f}')
@@ -86,7 +87,7 @@ class Trader():
             # trailingStopLossOnFill=ts_on_fill
         )
 
-        response = self.ctx.order.market(self.accountid, **order)
+        response = cfg.ctx.order.market(self.accountid, **order)
         id = response.get('orderFillTransaction').id
         return id
 
