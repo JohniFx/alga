@@ -26,21 +26,6 @@ def load_instruments():
         insts = pickle.load(handle)
     return insts
 
-
-def get_piplocation(name: str, insts: list):
-    for i in insts:
-        if i.name == name:
-            return pow(10, i.pipLocation)
-    return None
-
-
-def get_displayprecision(name: str, insts: list):
-    for i in insts:
-        if i.name == name:
-            return i.displayPrecision
-    return None
-
-
 def get_instrument(name: str, insts: list) -> v20.primitives.Instrument:
     for i in insts:
         if i.name == name:
