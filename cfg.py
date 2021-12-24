@@ -26,12 +26,8 @@ def get_account():
 
 account, lastTransactionID = get_account()
 
-price_table = {}
 insts = ctx.account.instruments(ACCOUNT_ID).get('instruments')
-# TODO: instruments és price_table-t összevonni! csak egy 
-# helyről lehessen ezeket lekérdezni
 instruments = {i.name:i.dict() for i in insts}
-# print(instruments['EUR_USD'])
 
 
 price_observers = []
@@ -58,15 +54,18 @@ def notify_account_observers():
 
 def run_price_stream():
     print('running price stream')
-    response = ctxs.pricing.stream(ACCOUNT_ID, instruments='EUR_AUD')
+    response = ctxs.pricing.stream(ACCOUNT_ID, instruments='EUR_AUD,EUR_USD')
     for typ, data in response.parts():
         if typ == "pricing.ClientPrice":
             cp = dict(
                 i=data.instrument,
                 bid=data.bids[0].price,
-                ask=data.asks[0].price
-            )
+                ask=data.asks[0].price)
             notify_price_observers(cp)
+            instruments[data.instrument]['bid']=data.bids[0].price
+            instruments[data.instrument]['ask']=data.asks[0].price
+            instruments[data.instrument]['spread']=round(data.asks[0].price-data.bids[0].price, instruments[data.instrument]['displayPrecision'])
+
 
 def run_transaction_stream():
     print('running transaction stream')

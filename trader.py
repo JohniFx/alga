@@ -6,8 +6,7 @@ from time import sleep
 
 class Trader():
     def __init__(self) -> None:
-        sleep(3)
-        print(cfg.price_table)
+        sleep(5)
 
     def check_instruments(self):
         trades = cfg.account.trades
