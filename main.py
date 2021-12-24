@@ -1,3 +1,5 @@
+#!usr/bin/python
+
 import cfg
 import trader
 import quant

@@ -3,11 +3,10 @@ config.ini
 defs.py
 data/*
 .vscode
-cfg.py
 __pycache__/*
 /__pycache__
 .ipynb*
 .ipynb_checkpoints/*
 notebook/__pycache__/*
 update.sh
-kpi_data.json
+*.json
