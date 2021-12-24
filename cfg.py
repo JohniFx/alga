@@ -7,11 +7,8 @@ import configparser
 config = configparser.ConfigParser()
 config.read('config.ini')
 
-# rename this file to cfg.py
-# TODO: ezt a két kulcsot beletenni egy config.txt-be és onnan beolvasni
 API_KEY = config['OANDA']['API_KEY'] 
 ACCOUNT_ID = config['OANDA']['ACCOUNT_ID']
-print(f'{API_KEY} {ACCOUNT_ID}')
 HOSTNAME   = "api-fxpractice.oanda.com"
 STREAMHOST = "stream-fxpractice.oanda.com"
 key = f'Bearer {API_KEY}'
