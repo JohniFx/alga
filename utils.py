@@ -1,6 +1,5 @@
 from datetime import datetime
 import pickle
-#import defs
 import v20
 import threading
 
@@ -123,8 +122,3 @@ def check_breakeven_for_position(trades, instrument):
     return all(all_breakeven)
 
 
-if __name__ == "__main__":
-    ctx = v20.Context(hostname=defs.HOSTNAME, token=defs.key)
-    ctx.set_header(key='Authorization', value=defs.key)
-    inst = get_instruments(ctx, defs.ACCOUNT_ID)
-    save_instruments(insts)

@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 import json
 
-#finally a change
 class Quant():
     def __init__(self) -> None:
         pass
@@ -214,6 +213,18 @@ class Quant():
 
 
 if __name__ == "__main__":
+    import sys, os
     print('Testing quant')
-    a = Quant()
-    a.get_signal('AUD_JPY')
+    try:
+        a = Quant()
+        a.get_signal('AUD_JPY')
+        for m in cfg.messages:
+            print(m)
+    except KeyboardInterrupt:
+        sys.exit(1)
+        thread.interrupt_main()
+        os._exit(1)
+    finally:        
+        os._exit(1)
+
+

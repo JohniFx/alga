@@ -26,6 +26,8 @@ def get_account():
 
 account, lastTransactionID = get_account()
 
+messages = []
+
 insts = ctx.account.instruments(ACCOUNT_ID).get('instruments')
 instruments = {i.name:i.dict() for i in insts}
 
