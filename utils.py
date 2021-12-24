@@ -1,5 +1,4 @@
 from datetime import datetime
-import pickle
 import v20
 import threading
 
@@ -11,37 +10,8 @@ def run_threaded(job_func, args=[]):
     t.start()
 
 
-def get_instruments(ctx, accountid):
-    insts = ctx.account.instruments(accountid).get('instruments')
-    return insts
-
-
-def save_instruments(insts):
-    with open('insts.pkl', 'wb') as handle:
-        pickle.dump(inst, handle)
-
-
-def load_instruments():
-    with open('insts.pkl', 'rb') as handle:
-        insts = pickle.load(handle)
-    return insts
-
-def get_instrument(name: str, insts: list) -> v20.primitives.Instrument:
-    for i in insts:
-        if i.name == name:
-            return i
-    return None
-
-
 def get_now():
     return datetime.now().strftime('%H:%M:%S')
-
-
-def get_account_info(ac):
-    msg = (f' {get_now()} '
-           f' NAV:{ac.NAV:.2f}'
-           f' PNL:{ac.unrealizedPL:.2f}')
-    return msg
 
 
 def get_trade_info(t: v20.trade.Trade) -> str:
