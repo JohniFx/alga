@@ -57,23 +57,6 @@ def get_position_info(p):
     return msg
 
 
-def get_trades_by_instrument(trades, instrument):
-    inst_trades = []
-    for t in trades:
-        if t.instrument == instrument:
-            inst_trades.append(t)
-    return inst_trades
 
-
-def check_breakeven_for_position(trades, instrument):
-    all_breakeven = []
-    for t in trades:
-        if t.instrument == instrument:
-            all_breakeven.append(
-                (t.currentUnits > 0 and t.stopLossOrder.price >= t.price)
-                or
-                (t.currentUnits < 0 and t.stopLossOrder.price <= t.price))
-    # print('len(trades)', all_breakeven)
-    return all(all_breakeven)
 
 

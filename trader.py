@@ -13,14 +13,11 @@ class Trader():
         trades.sort(key=lambda x: (x.instrument, x.price))
 
         for i in cfg.instruments:
-            # TODO: utils nem kell helyette cfg.instruments, cfg.account
-            inst_trades = u.get_trades_by_instrument(trades, i)
+            inst_trades = cfg.get_trades_by_instrument(trades, i)
             if len(inst_trades) == 0:
                 self.check_instrument(i)
             else:
-                #TODO: utils átrakni cfg-be
-                if u.check_breakeven_for_position(trades, i):
-                    # print(i, 'be')
+                if cfg.check_breakeven_for_position(trades, i):
                     if inst_trades[0].currentUnits > 0:
                         threading.Thread(
                             target=self.check_instrument, args=[i, 1]).start()
@@ -37,12 +34,15 @@ class Trader():
 
         sl = cfg.global_params['sl']
         tp = cfg.global_params['tp']
-        #TODO: lekérdezni nem kell helyette cfg.account....
-        ac = self.ctx.account.summary(self.accountid).get('account')
-        units = int(ac.marginAvailable/4)
+        units = int(cfg.account.marginAvailable/4)
 
         if signaltype == 'XL':
             units *= 2
+
+        ask = cfg.instruments['inst']['ask']
+        bid = cfg.instruments['inst']['bid']
+        piploc = cfg.instruments['inst']['pipLocation']
+  
 
         if signal == 1:
             entry = ask
@@ -70,7 +70,7 @@ class Trader():
     def place_market(self, inst, units, stopPrice, profitPrice=None, id='0'):
         prec = cfg.instruments[inst]['displayPrecision']
         gp_ts = cfg.global_params['ts']
-        tsdist = gp_ts * u.get_piplocation(inst, self.insts)
+        tsdist = gp_ts * cfg.instruments[inst]['pipLocation']
 
         sl_on_fill = dict(timeInForce='GTC', price=f'{stopPrice:.{prec}f}')
         tp_on_fill = dict(timeInForce='GTC', price=f'{profitPrice:.{prec}f}')
@@ -87,14 +87,13 @@ class Trader():
             # trailingStopLossOnFill=ts_on_fill
         )
 
-        response = cfg.ctx.order.market(self.accountid, **order)
+        response = cfg.ctx.order.market(cfg.ACCOUNT_ID, **order)
         id = response.get('orderFillTransaction').id
         return id
 
     def place_limit(self, inst, units, entryPrice, stopPrice, profitPrice):
-        prec = u.get_displayprecision(inst, self.insts)
-        ts_dist = (cfg.global_params['ts']
-                   * u.get_piplocation(inst, self.insts))
+        prec = cfg.instruments[inst]['displayPrecision']
+        ts_dist = cfg.global_params['ts'] * cfg.instruments[inst]['pipLocation']
 
         sl_on_fill = dict(timeInForce='GTC', price=f'{stopPrice:.{prec}f}')
         tp_on_fill = dict(timeInForce='GTC', price=f'{profitPrice:.{prec}f}')
@@ -119,7 +118,7 @@ class Trader():
             trailingStopLossOnFill=ts_on_fill
         )
 
-        response = self.ctx.order.limit(self.accountid, **order)
+        response = cfg.ctx.order.limit(cfg.ACCOUNT_ID, **order)
         if response.status != 201:
             print(response)
             print(response.body)

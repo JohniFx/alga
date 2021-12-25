@@ -192,6 +192,25 @@ def update_account(account, changes, state):
     update_positions(account, state)
     update_orders(account, state)
 
+   
+def check_breakeven_for_position(trades, instrument):
+    all_breakeven = []
+    for t in trades:
+        if t.instrument == instrument:
+            all_breakeven.append(
+                (t.currentUnits > 0 and t.stopLossOrder.price >= t.price)
+                or
+                (t.currentUnits < 0 and t.stopLossOrder.price <= t.price))
+    return all(all_breakeven)
+
+
+def get_trades_by_instrument(trades, instrument):
+    inst_trades = []
+    for t in trades:
+        if t.instrument == instrument:
+            inst_trades.append(t)
+    return inst_trades
+
 threading.Thread(target=run_price_stream).start()
 threading.Thread(target=run_transaction_stream).start()
 threading.Thread(target=run_account_update, args=[account, lastTransactionID]).start()
