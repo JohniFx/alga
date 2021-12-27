@@ -28,8 +28,12 @@ account, lastTransactionID = get_account()
 
 messages = []
 
+# TODO: a spread miatt ezt is időszakosan frissíteni
 insts = ctx.account.instruments(ACCOUNT_ID).get('instruments')
 instruments = {i.name:i.dict() for i in insts}
+
+tradeable_instruments = ['EUR_USD', 'GBP_USD', 'USD_JPY', 'EUR_CAD']
+tradeinsts = ','.join(tradeable_instruments)
 
 
 price_observers = []
@@ -56,7 +60,7 @@ def notify_account_observers():
 
 def run_price_stream():
     print('running price stream')
-    response = ctxs.pricing.stream(ACCOUNT_ID, instruments='EUR_AUD,EUR_USD')
+    response = ctxs.pricing.stream(ACCOUNT_ID, instruments=tradeinsts)
     for typ, data in response.parts():
         if typ == "pricing.ClientPrice":
             cp = dict(

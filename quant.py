@@ -1,7 +1,7 @@
 import cfg
 import numpy as np
 import pandas as pd
-import json
+import json, pickle
 
 class Quant():
     def __init__(self) -> None:
@@ -28,6 +28,21 @@ class Quant():
             rows.append(row)
 
         return pd.DataFrame.from_dict(rows)
+
+    #TODO:  átrakni cfg-be
+    def fetch_data(self, tf='M5', count=100):
+        for inst in cfg.tradeable_instruments:
+            df = self.get_candles(inst, count, tf)
+            df.to_pickle(f'./data/{inst}_{tf}.pkl')
+        print('data files have been updated')
+
+    def update_kpi_file(self):
+        kpi_data=[]
+        for inst in cfg.tradeable_instruments:
+            kpi_data.append(self.get_kpi_dict(inst=inst, tf='M5'))
+        with open('kpi_data.json', 'w') as write_file:
+            json.dump(kpi_data, write_file, indent=2)
+        print('kpi data has been updated')
 
     def get_linreg(self, df):
         x = np.arange(len(df))
@@ -145,6 +160,7 @@ class Quant():
             pass
 
     def get_signal(self, inst, count=15, tf='M5'):
+        print(f'get signal: {inst} {count} {tf}')
         df = self.get_candles(inst, count, tf)
         self.add_hilo(df)
         self.add_mom(df)
@@ -195,7 +211,7 @@ class Quant():
             sto=df.STO_K.iloc[-1].round(2)
         )
 
-        cfg.messages.append(str(signals))
+        print(signals)
         if (s1 == s2) and (s2 == s3) and (s3 == df.lr_slope.iloc[-1]):
             print('** supersignal **')
             return s1, 'XL'

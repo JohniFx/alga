@@ -1,19 +1,28 @@
 import cfg
 import v20
 import utils as u
-import threading
+import quant
 from time import sleep
 
 class Trader():
     def __init__(self) -> None:
-        sleep(5)
+        self.a = quant.Quant()
+        # print(cfg.instruments[0])
+        # for i in cfg.instruments:
+          #   print(f'{cfg.instruments[i]}')
 
     def check_instruments(self):
+
         trades = cfg.account.trades
         trades.sort(key=lambda x: (x.instrument, x.price))
 
-        for i in cfg.instruments:
+        for i in cfg.tradeable_instruments:
+            if 'spread'not in cfg.instruments[i]:
+                print(f'no spread. no check: {i}') 
+                continue
+
             inst_trades = cfg.get_trades_by_instrument(trades, i)
+            print(f'checking: {i} {inst_trades}')
             if len(inst_trades) == 0:
                 self.check_instrument(i)
             else:
@@ -25,7 +34,9 @@ class Trader():
                         threading.Thread(
                             target=self.check_instrument, args=[i, -1]).start()
 
-    def check_instrument(self, inst, positioning=None) -> str:
+    def check_instrument(self, inst, positioning=0) -> str:
+        print(f'check instrument: {inst}')
+
         signal, signaltype = self.a.get_signal(inst, tf='M5')
 
         valid = [(-1, -1), (-1, 0), (1, 0), (1, 1)]
@@ -38,10 +49,10 @@ class Trader():
 
         if signaltype == 'XL':
             units *= 2
-
-        ask = cfg.instruments['inst']['ask']
-        bid = cfg.instruments['inst']['bid']
-        piploc = cfg.instruments['inst']['pipLocation']
+        ask = cfg.instruments[inst]['ask']
+        bid = cfg.instruments[inst]['bid']
+        spread = cfg.instruments[inst]['spread']
+        piploc = pow(10, cfg.instruments[inst]['pipLocation'])
   
 
         if signal == 1:
@@ -54,8 +65,6 @@ class Trader():
             stopprice = bid + sl*piploc
             profitPrice = bid - tp*piploc
 
-        self.place_market(inst, units, stopprice, profitPrice, signaltype)
-
         msg = (f'{units:>5}'
                f' {inst:>7}'
                f' {entry:>9.5f}'
@@ -63,14 +72,14 @@ class Trader():
                f' TP:{profitPrice:>9.5f}'
                f' A:{ask:>8.5f}/B:{bid:<8.5f}'
                f' {spread:>6.4f}')
-        data_lock = threading.Lock()
-        with data_lock:
-            self.messages.append(msg)
+        print(msg)
+        self.place_market(inst, units, stopprice, profitPrice, signaltype)
+
 
     def place_market(self, inst, units, stopPrice, profitPrice=None, id='0'):
         prec = cfg.instruments[inst]['displayPrecision']
         gp_ts = cfg.global_params['ts']
-        tsdist = gp_ts * cfg.instruments[inst]['pipLocation']
+        tsdist = gp_ts * pow(10,cfg.instruments[inst]['pipLocation'])
 
         sl_on_fill = dict(timeInForce='GTC', price=f'{stopPrice:.{prec}f}')
         tp_on_fill = dict(timeInForce='GTC', price=f'{profitPrice:.{prec}f}')
@@ -86,6 +95,7 @@ class Trader():
             stopLossOnFill=sl_on_fill
             # trailingStopLossOnFill=ts_on_fill
         )
+        print(order)
 
         response = cfg.ctx.order.market(cfg.ACCOUNT_ID, **order)
         id = response.get('orderFillTransaction').id
