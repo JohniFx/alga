@@ -201,10 +201,12 @@ def check_breakeven_for_position(trades, instrument):
     all_breakeven = []
     for t in trades:
         if t.instrument == instrument:
-            all_breakeven.append(
-                (t.currentUnits > 0 and t.stopLossOrder.price >= t.price)
-                or
-                (t.currentUnits < 0 and t.stopLossOrder.price <= t.price))
+            for o in account.orders:
+                if o.id == t.stopLossOrderID:
+                    all_breakeven.append(
+                    (t.currentUnits > 0 and t.stopLossOrder.price >= t.price)
+                    or
+                    (t.currentUnits < 0 and t.stopLossOrder.price <= t.price))
     return all(all_breakeven)
 
 
