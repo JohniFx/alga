@@ -204,9 +204,9 @@ def check_breakeven_for_position(trades, instrument):
             for o in account.orders:
                 if o.id == t.stopLossOrderID:
                     all_breakeven.append(
-                    (t.currentUnits > 0 and t.stopLossOrder.price >= t.price)
+                    (t.currentUnits > 0 and o.price >= t.price)
                     or
-                    (t.currentUnits < 0 and t.stopLossOrder.price <= t.price))
+                    (t.currentUnits < 0 and o.price <= t.price))
     return all(all_breakeven)
 
 
