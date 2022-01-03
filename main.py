@@ -7,6 +7,7 @@ import threading
 import time
 from datetime import datetime
 
+
 class Main():
     def __init__(self) -> None:
         cfg.price_observers.append(self)
