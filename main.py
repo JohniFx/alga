@@ -19,7 +19,7 @@ class Main():
 
     def update_kpi(self):
         while True:
-            print('updating data and kpi')
+            print('updating kpi')
             q = quant.Quant()
             q.fetch_data()
             q.fetch_data(tf='D', count='10')
