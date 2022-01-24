@@ -3,6 +3,8 @@ import numpy as np
 import pandas as pd
 import json, pickle
 
+__version__ = '2022-01-24'
+
 class Quant():
     def __init__(self) -> None:
         pass
