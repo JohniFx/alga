@@ -22,7 +22,7 @@ class Trader():
                 continue
 
             inst_trades = cfg.get_trades_by_instrument(trades, i)
-            print(f'checking: {i} {inst_trades}')
+            #print(f'checking: {i} {len(inst_trades)}')
             if len(inst_trades) == 0:
                 self.check_instrument(i)
             else:
@@ -36,7 +36,7 @@ class Trader():
  
 
     def check_instrument(self, inst, positioning=0) -> str:
-        print(f'check instrument: {inst}')
+        #print(f'check instrument: {inst}')
 
         signal, signaltype = self.a.get_signal(inst, tf='M5')
 

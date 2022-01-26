@@ -28,32 +28,31 @@ class Main():
 
 
     def run_check_instruments(self):
-        while True:
-            print('checking instruments loop')
+        print('run check instruments 120sec loop')
+        while True:            
             self.t = trader.Trader()
             self.t.check_instruments()
             time.sleep(120)
 
     def on_tick(self, cp):
-        msg = f"{datetime.now().strftime('%H:%M:%S')}"
-        msg += f" {cp['i']}: {cp['bid']:.5f} / {cp['ask']:.5f}"
-#        if 'spread' in cfg.instruments[cp['i']]:
-#            print(msg,  cfg.instruments[cp['i']]['spread'])
-#        else:
-#            print(msg, 'no spread')
-#            # print(cfg.instruments[cp[i]])
+        if 'spread' not in cfg.instruments[cp['i']]:
+            msg = f"{datetime.now().strftime('%H:%M:%S')}"
+            msg += f" {cp['i']}: {cp['bid']:.5f} / {cp['ask']:.5f}"
+            print(msg, 'no spread')
 
     def on_data(self, data):
         msg = f"{datetime.now().strftime('%H:%M:%S')}"
         inst = ''
         if hasattr(data, 'instrument'):
             inst = data.instrument
-        msg += f" {data.id} {data.type} {data.reason} {inst}"
-        print(msg)
+        texts = ['REPLACEMENT', 'CLIENT_REQUEST_REPLACED']
+        if data.reason not in texts:
+            msg += f" {data.id} {data.type} {data.reason} {inst}"
+            print(msg)
 
     def on_account_changes(self):
         msg = f"{datetime.now().strftime('%H:%M:%S')}"
-        msg+= f" {cfg.account.balance}"
+        msg+= f" {cfg.account.NAV}"
         msg+= f" {cfg.account.unrealizedPL}"
         msg+= f" t:{len(cfg.account.trades)}"
         msg+= f" o:{len(cfg.account.orders)}"
