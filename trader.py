@@ -29,7 +29,6 @@ class Trader():
                     elif inst_trades[0].currentUnits < 0:
                         threading.Thread(
                             target=self.check_instrument, args=[i, -1]).start()
- 
 
     def check_instrument(self, inst, positioning=0) -> str:
 
@@ -70,7 +69,6 @@ class Trader():
                f' {spread:>6.4f}')
         print(msg)
         self.place_market(inst, units, stopprice, profitPrice, signaltype)
-
 
     def place_market(self, inst, units, stopPrice, profitPrice=None, id='0'):
         prec = cfg.instruments[inst]['displayPrecision']
