@@ -32,8 +32,7 @@ messages = []
 insts = ctx.account.instruments(ACCOUNT_ID).get('instruments')
 instruments = {i.name:i.dict() for i in insts}
 
-tradeable_instruments = ['EUR_USD', 'GBP_USD', 'USD_JPY', 'EUR_CAD',
-'EUR_AUD', 'EUR_GBP', 'EUR_NZD', 'EUR_CHF']
+tradeable_instruments = ['EUR_USD', 'EUR_CAD','EUR_AUD', 'EUR_GBP', 'EUR_NZD', 'EUR_CHF', 'EUR_JPY']
 tradeinsts = ','.join(tradeable_instruments)
 
 
@@ -94,7 +93,7 @@ def run_account_update(account, lastTransactionID):
         _lastId = r.get('lastTransactionID')
         update_account(account, changes, state)
         notify_account_observers()
-        time.sleep(15)
+        time.sleep(20)
 
 def update_trades(account, state):
     for tc in state.trades:

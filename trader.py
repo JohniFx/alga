@@ -7,9 +7,6 @@ from time import sleep
 class Trader():
     def __init__(self) -> None:
         self.a = quant.Quant()
-        # print(cfg.instruments[0])
-        # for i in cfg.instruments:
-          #   print(f'{cfg.instruments[i]}')
 
     def check_instruments(self):
 
@@ -22,7 +19,6 @@ class Trader():
                 continue
 
             inst_trades = cfg.get_trades_by_instrument(trades, i)
-            #print(f'checking: {i} {len(inst_trades)}')
             if len(inst_trades) == 0:
                 self.check_instrument(i)
             else:
@@ -36,7 +32,6 @@ class Trader():
  
 
     def check_instrument(self, inst, positioning=0) -> str:
-        #print(f'check instrument: {inst}')
 
         signal, signaltype = self.a.get_signal(inst, tf='M5')
 
@@ -84,7 +79,7 @@ class Trader():
 
         sl_on_fill = dict(timeInForce='GTC', price=f'{stopPrice:.{prec}f}')
         tp_on_fill = dict(timeInForce='GTC', price=f'{profitPrice:.{prec}f}')
-        # ts_on_fill = dict(timeInForce='GTC', distance=f'{tsdist:.{prec}f}')
+        ts_on_fill = dict(timeInForce='GTC', distance=f'{tsdist:.{prec}f}')
         ce = dict(id=id, tag='Signal id', comment='Signal id commented')
 
         order = dict(
@@ -93,10 +88,10 @@ class Trader():
             units=units,
             clientExtensions=ce,
             takeProfitOnFill=tp_on_fill,
-            stopLossOnFill=sl_on_fill
-            # trailingStopLossOnFill=ts_on_fill
+            stopLossOnFill=sl_on_fill,
+            trailingStopLossOnFill=ts_on_fill
         )
-        print(order)
+        print('\n', order)
 
         response = cfg.ctx.order.market(cfg.ACCOUNT_ID, **order)
         id = response.get('orderFillTransaction').id
