@@ -32,7 +32,8 @@ messages = []
 insts = ctx.account.instruments(ACCOUNT_ID).get('instruments')
 instruments = {i.name:i.dict() for i in insts}
 
-tradeable_instruments = ['EUR_USD', 'GBP_USD', 'USD_JPY', 'EUR_CAD']
+tradeable_instruments = ['EUR_USD', 'GBP_USD', 'USD_JPY', 'EUR_CAD',
+'EUR_AUD', 'EUR_GBP', 'EUR_NZD', 'EUR_CHF']
 tradeinsts = ','.join(tradeable_instruments)
 
 

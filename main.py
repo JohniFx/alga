@@ -45,15 +45,18 @@ class Main():
         inst = ''
         if hasattr(data, 'instrument'):
             inst = data.instrument
-        texts = ['REPLACEMENT', 'CLIENT_REQUEST_REPLACED']
-        if data.reason not in texts:
+        reasons = ['REPLACEMENT', 
+            'CLIENT_REQUEST_REPLACED', 
+            'ON_FILL',
+            'LINKED_TRADE_CLOSED']
+        if data.reason not in reasons:
             msg += f" {data.id} {data.type} {data.reason} {inst}"
             print(msg)
 
     def on_account_changes(self):
         msg = f"{datetime.now().strftime('%H:%M:%S')}"
-        msg+= f" {cfg.account.NAV}"
-        msg+= f" {cfg.account.unrealizedPL}"
+        msg+= f" {float(cfg.account.NAV):>7.2f}"
+        msg+= f" {float(cfg.account.unrealizedPL):>8.4f}"
         msg+= f" t:{len(cfg.account.trades)}"
         msg+= f" o:{len(cfg.account.orders)}"
         msg+= f" p:{self.get_open_positions()}"
