@@ -161,6 +161,7 @@ class Quant():
         if signal == 1:
             pass
 
+    # TODO: update signaling 
     def get_signal(self, inst, count=15, tf='M5'):
         #print(f'get signal: {inst} {count} {tf}')
         df = self.get_candles(inst, count, tf)
