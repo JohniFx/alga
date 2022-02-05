@@ -6,7 +6,7 @@ import quant
 import threading
 import time
 from datetime import datetime
-
+__version__ = '2022-02-06'
 
 class Main():
     def __init__(self) -> None:
