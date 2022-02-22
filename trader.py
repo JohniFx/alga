@@ -8,12 +8,14 @@ class Trader():
     def __init__(self) -> None:
         self.a = quant.Quant()
 
-    def check_instruments(self):
+    # main ütemezi
+    # hiba
+    def check_instruments(self, tradeable_instruments):
 
         trades = cfg.account.trades
         trades.sort(key=lambda x: (x.instrument, x.price))
 
-        for i in cfg.tradeable_instruments:
+        for i in tradeable_instruments:
             if 'spread'not in cfg.instruments[i]:
                 print(f'no spread. no check: {i}') 
                 continue
@@ -40,7 +42,7 @@ class Trader():
 
         sl = cfg.global_params['sl']
         tp = cfg.global_params['tp']
-        units = int(cfg.account.marginAvailable/4)
+        units = int(cfg.account.marginAvailable/10)
 
         if signaltype == 'XL':
             units *= 2
@@ -127,6 +129,11 @@ class Trader():
             print(response)
             print(response.body)
 
+    def close_trade(self, trade):
+        pass
+        
+    def add_stop(self, trade):
+        pass
 
 if __name__ == '__main__':
     t = Trader()

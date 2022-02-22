@@ -170,7 +170,7 @@ class Quant():
         self.add_kpi(df, inst)
         self.add_stochastic(df, 10, 3)
 
-        # Strategy1
+        # Strategy1most azt csinálo
         cd1 = (df.hilo > 0) & (df.mom_pos > 0) & (
             df.mom_slope > 0) & (df.lr_slope > 0)
         cd2 = (df.hilo < 0) & (df.mom_pos < 0) & (

@@ -13,8 +13,10 @@ class Main():
         cfg.price_observers.append(self)
         cfg.transaction_observers.append(self)
         cfg.account_observers.append(self)
+
         threading.Thread(target=self.update_kpi).start()
         time.sleep(5)
+        #TODO: ide kell egy általános ellenőrző metodus; minden poziciót ellenőriz, stopot berak ha nincs, breakeven-be huz ha nem lenne
         threading.Thread(target=self.run_check_instruments).start()
 
     def update_kpi(self):
@@ -26,12 +28,11 @@ class Main():
             q.update_kpi_file()
             time.sleep(60*30)
 
-
     def run_check_instruments(self):
         print('run check instruments 120sec loop')
         while True:            
             self.t = trader.Trader()
-            self.t.check_instruments()
+            self.t.check_instruments(cfg.tradeable_instruments)
             time.sleep(120)
 
     def on_tick(self, cp):
@@ -74,6 +75,22 @@ class Main():
         prices = r.get('prices')
         for p in prices:
             print(p)
+
+    def initial_tradecheck(self):
+        # minden élő tréd
+        # ha nem breakeven
+        # ha nincs a tradeable_instrumentben akkor csak kiirja
+        for t in cfg,account.trades:
+            #  ha nincs stop
+            if t.stopLossOrderID is None:
+                if t.unrealizedPL >= 0:
+                    # TODO: no instance needed
+                    self.t.add_stop(t)
+                else:
+                    self.t.close_trade(t)
+            # ha van stop
+
+
 
 
 if __name__ == '__main__':

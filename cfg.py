@@ -7,8 +7,8 @@ import configparser
 config = configparser.ConfigParser()
 config.read('config.ini')
 
-API_KEY = config['OANDA']['API_KEY'] 
-ACCOUNT_ID = config['OANDA']['ACCOUNT_ID']
+API_KEY = config['OANDA2']['API_KEY'] 
+ACCOUNT_ID = config['OANDA2']['ACCOUNT_ID']
 HOSTNAME   = "api-fxpractice.oanda.com"
 STREAMHOST = "stream-fxpractice.oanda.com"
 key = f'Bearer {API_KEY}'
@@ -32,7 +32,14 @@ messages = []
 insts = ctx.account.instruments(ACCOUNT_ID).get('instruments')
 instruments = {i.name:i.dict() for i in insts}
 
-tradeable_instruments = ['EUR_USD', 'EUR_CAD','EUR_AUD', 'EUR_GBP', 'EUR_NZD', 'EUR_CHF', 'EUR_JPY']
+tradeable_instruments = [
+    'EUR_USD', 
+    'EUR_CAD',
+    'EUR_AUD', 
+    'EUR_GBP', 
+    'EUR_NZD', 
+    'EUR_CHF', 
+    'EUR_JPY']
 tradeinsts = ','.join(tradeable_instruments)
 
 
@@ -198,6 +205,7 @@ def update_account(account, changes, state):
 
    
 def check_breakeven_for_position(trades, instrument):
+    print('cfg check breakeven', instrument)
     all_breakeven = []
     for t in trades:
         if t.instrument == instrument:
