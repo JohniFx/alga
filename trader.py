@@ -129,11 +129,17 @@ class Trader():
             print(response)
             print(response.body)
 
-    def close_trade(self, trade):
-        pass
-        
+    def close_trade(self, trade, units: int=0):
+        print('closing trade:', trade.id, trade.instrument, trade.currentUnits, trade.unrealizedPL)
+        if units==0:
+            cfg.ctx.trade.close(cfg.ACCOUNT_ID, trade.id, units='ALL')
+        else:
+            cfg.ctx.trade.close(cfg.ACCOUNT_ID, trade.id, units=str(units))
+
+
     def add_stop(self, trade):
-        pass
+        print('adding stop NOT IMPLEMENTED', trade.id, trade.instrument, trade.currentUnits)
+        
 
 if __name__ == '__main__':
     t = Trader()
