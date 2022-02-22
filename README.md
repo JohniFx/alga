@@ -3,13 +3,18 @@
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/w/johnifx/alga) ![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/johnifx/alga) ![GitHub all releases](https://img.shields.io/github/downloads/johnifx/alga/total)
 
 This repo uses oanda v20 API as a basis for a forex trading algo. The focus is not on some magic indicators but to implement more and more general trading rules like 
-- "do not add to loser",
-- "let your winners run and cut your losses quickly"
-- move your stop to breakeven asap...etc
+- do not add to loser,
+- let your winners run and cut your losses quickly,
+- move your stop to breakeven asap,
+- do not hold stopless, losing trades
+- take small partialprofits.
 
 Some additional ipynb jupyter notebook files also included. They contain background analysis, and not part of the algo.
 
 Unfortunately the algo is not successful, still producing losses, so it may be called loss generator or account destroyer.  I have way to many ideas to implement but time is a constraint.
+
+2022-02-22 comments
+at algo start the prog checks any open trades in the main.initial_tradecheck() method. this is not yet ready further code comes.
 
 2021-12-08 comments
 
