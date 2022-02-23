@@ -3,6 +3,7 @@ import v20
 import utils as u
 import quant
 from time import sleep
+import threading
 
 class Trader():
     def __init__(self) -> None:
@@ -42,7 +43,7 @@ class Trader():
 
         sl = cfg.global_params['sl']
         tp = cfg.global_params['tp']
-        units = int(cfg.account.marginAvailable/10)
+        units = int(cfg.account.marginAvailable/100)
 
         if signaltype == 'XL':
             units *= 2
@@ -91,7 +92,7 @@ class Trader():
             stopLossOnFill=sl_on_fill,
             trailingStopLossOnFill=ts_on_fill
         )
-        print('\n', order)
+        # print('\n', order)
 
         response = cfg.ctx.order.market(cfg.ACCOUNT_ID, **order)
         id = response.get('orderFillTransaction').id

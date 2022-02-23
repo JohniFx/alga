@@ -200,10 +200,8 @@ def update_account(account, changes, state):
     update_trades(account, state)
     update_positions(account, state)
     update_orders(account, state)
-
    
 def check_breakeven_for_position(trades, instrument):
-    print('cfg check breakeven', instrument)
     all_breakeven = []
     for t in trades:
         if t.instrument == instrument:
@@ -213,6 +211,7 @@ def check_breakeven_for_position(trades, instrument):
                     (t.currentUnits > 0 and o.price >= t.price)
                     or
                     (t.currentUnits < 0 and o.price <= t.price))
+    print('cfg check breakeven', instrument,all(all_breakeven) )
     return all(all_breakeven)
 
 def get_trades_by_instrument(trades, instrument):

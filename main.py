@@ -19,7 +19,7 @@ class Main():
         time.sleep(5)
         self.initial_tradecheck()
         #TODO: ide kell egy általános ellenőrző metodus; minden poziciót ellenőriz, stopot berak ha nincs, breakeven-be huz ha nem lenne
-        # threading.Thread(target=self.run_check_instruments).start()
+        threading.Thread(target=self.run_check_instruments).start()
 
     def update_kpi(self):
         while True:
@@ -31,9 +31,9 @@ class Main():
             time.sleep(60*30)
 
     def run_check_instruments(self):
-        print('run check instruments 120sec loop')
         while True:           
             self.t.check_instruments(cfg.tradeable_instruments)
+            return
             time.sleep(120)
 
     def on_tick(self, cp):
@@ -55,7 +55,7 @@ class Main():
         reasons = [
             # 'REPLACEMENT', 
             # 'CLIENT_REQUEST_REPLACED', 
-            # 'ON_FILL',
+            'ON_FILL',
             # 'LINKED_TRADE_CLOSED',
             # 'CLIENT_ORDER'
             ]
