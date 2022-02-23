@@ -9,8 +9,7 @@ class Trader():
     def __init__(self) -> None:
         self.a = quant.Quant()
 
-    # main ütemezi
-    # hiba
+
     def check_instruments(self, tradeable_instruments):
 
         trades = cfg.account.trades
@@ -26,6 +25,7 @@ class Trader():
                 self.check_instrument(i)
             else:
                 if cfg.check_breakeven_for_position(trades, i):
+                    print('add to breakeven...')
                     if inst_trades[0].currentUnits > 0:
                         threading.Thread(
                             target=self.check_instrument, args=[i, 1]).start()

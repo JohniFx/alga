@@ -33,7 +33,6 @@ class Main():
     def run_check_instruments(self):
         while True:           
             self.t.check_instruments(cfg.tradeable_instruments)
-            return
             time.sleep(120)
 
     def on_tick(self, cp):
@@ -62,11 +61,16 @@ class Main():
         if (data.type in types) or (data.reason in reasons):
             return
         msg += f" {data.id} {data.type}.{data.reason} {inst}"
+        if data.reason in ['TRAILING_STOP_LOSS_ORDER','TAKE_PROFIT_ORDER', 'STOP_LOSS_ORDER']:
+            print('show closed positions pl')
+            msg += f" {data.units} PL:{data.pl}, cost:{data.halfSpreadCost}"
+
+        
         print(msg)
 
     def on_account_changes(self):
         # print('on account changes')
-        if datetime.now().minute%5==0:
+        if datetime.now().minute%15==0:
             msg = f"{datetime.now().strftime('%H:%M:%S')}"
             msg+= f" {float(cfg.account.NAV):>7.2f}"
             msg+= f" {float(cfg.account.unrealizedPL):>8.4f}"

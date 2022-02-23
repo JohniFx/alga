@@ -48,9 +48,9 @@ transaction_observers = []
 account_observers = []
 
 global_params = dict(
-    tp=10,
-    sl=10,
-    ts=11)
+    tp=50,
+    sl=12,
+    ts=15)
 # print(global_params)
 
 def notify_price_observers(cp):
@@ -211,7 +211,8 @@ def check_breakeven_for_position(trades, instrument):
                     (t.currentUnits > 0 and o.price >= t.price)
                     or
                     (t.currentUnits < 0 and o.price <= t.price))
-    print('cfg check breakeven', instrument,all(all_breakeven) )
+    if all(all_breakeven):
+        print('cfg check breakeven', instrument,all(all_breakeven) )
     return all(all_breakeven)
 
 def get_trades_by_instrument(trades, instrument):
