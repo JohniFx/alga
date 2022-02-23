@@ -61,7 +61,14 @@ class Main():
         if (data.type in types) or (data.reason in reasons):
             return
         msg += f" {data.id} {data.type}.{data.reason} {inst}"
-        if data.reason in ['TRAILING_STOP_LOSS_ORDER','TAKE_PROFIT_ORDER', 'STOP_LOSS_ORDER']:
+        
+        reasons_detailed=[
+            'TRAILING_STOP_LOSS_ORDER',
+            'TAKE_PROFIT_ORDER', 
+            'STOP_LOSS_ORDER', 
+            'MARKET_ORDER_TRADE_CLOSE']
+
+        if data.reason in reasons_detailed:
             print('show closed positions pl')
             msg += f" {data.units} PL:{data.pl}, cost:{data.halfSpreadCost}"
 

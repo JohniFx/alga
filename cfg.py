@@ -39,7 +39,7 @@ tradeable_instruments = [
     'EUR_GBP', 
     'EUR_NZD', 
     'EUR_CHF', 
-    'EUR_JPY']
+    'EUR_JPY', 'GBP_USD', 'GBP_AUD', 'GBP_JPY', 'GBP_CHF']
 tradeinsts = ','.join(tradeable_instruments)
 
 
