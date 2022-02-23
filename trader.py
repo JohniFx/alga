@@ -138,8 +138,17 @@ class Trader():
 
 
     def add_stop(self, trade):
-        print('adding stop NOT IMPLEMENTED', trade.id, trade.instrument, trade.currentUnits)
-        
+        print('adding stop', trade.id, trade.instrument, trade.currentUnits)
+        sl = dict(
+            price=str(trade.price),
+            type='STOP_LOSS',
+            tradeID=trade.id
+        )
+        cfg.ctx.trade.set_dependent_orders(
+            cfg.ACCOUNT_ID,
+            trade.id,
+            stopLoss=sl
+        )
 
 if __name__ == '__main__':
     t = Trader()
