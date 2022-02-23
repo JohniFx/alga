@@ -16,6 +16,7 @@ class Trader():
         trades.sort(key=lambda x: (x.instrument, x.price))
 
         for i in tradeable_instruments:
+            # print('checking', i)
             if 'spread'not in cfg.instruments[i]:
                 print(f'no spread. no check: {i}') 
                 continue
@@ -25,7 +26,7 @@ class Trader():
                 self.check_instrument(i)
             else:
                 if cfg.check_breakeven_for_position(trades, i):
-                    print('add to breakeven...')
+                    # print('trying to add to breakeven...')
                     if inst_trades[0].currentUnits > 0:
                         threading.Thread(
                             target=self.check_instrument, args=[i, 1]).start()
@@ -34,7 +35,7 @@ class Trader():
                             target=self.check_instrument, args=[i, -1]).start()
 
     def check_instrument(self, inst, positioning=0) -> str:
-
+        # print('  check', inst, positioning)
         signal, signaltype = self.a.get_signal(inst, tf='M5')
 
         valid = [(-1, -1), (-1, 0), (1, 0), (1, 1)]
@@ -63,15 +64,16 @@ class Trader():
             stopprice = bid + sl*piploc
             profitPrice = bid - tp*piploc
 
-        msg = (f'{units:>5}'
-               f' {inst:>7}'
-               f' {entry:>9.5f}'
-               f' SL:{stopprice:>9.5f}'
+        msg = (f'{signaltype}: {inst}'
+               f' {units}'
+               f' {entry:.5f}'
+               f' SL:{stopprice:.5f}'
                f' TP:{profitPrice:>9.5f}'
                f' A:{ask:>8.5f}/B:{bid:<8.5f}'
                f' {spread:>6.4f}')
         print(msg)
-        self.place_market(inst, units, stopprice, profitPrice, signaltype)
+        threading.Thread(target=self.place_market, args=[inst, units, stopprice, profitPrice, signaltype]).start()
+        # self.place_market(inst, units, stopprice, profitPrice, signaltype)
 
     def place_market(self, inst, units, stopPrice, profitPrice=None, id='0'):
         prec = cfg.instruments[inst]['displayPrecision']

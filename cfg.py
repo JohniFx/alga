@@ -169,6 +169,7 @@ def apply_changes(account, changes: AccountChanges):
     for ocr in changes.ordersCreated:
         account.orders.append(ocr)
         for t in account.trades:
+            # AttributeError: 'StopOrder' object has no attribute 'tradeID'
             if t.id == ocr.tradeID:
                 if ocr.type == 'STOP_LOSS':
                     t.stopLossOrderID = ocr.id

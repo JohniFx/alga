@@ -106,5 +106,5 @@ class Main():
 if __name__ == '__main__':
     try:
         m = Main()
-    except (KeyboardInterrupt, SystemExit):
-        sys.exit(0)
+    except KeyboardInterrupt:
+        print('ide kellene a threadek lezárása')
