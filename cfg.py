@@ -7,8 +7,8 @@ import configparser
 config = configparser.ConfigParser()
 config.read('config.ini')
 
-API_KEY = config['OANDA']['API_KEY'] 
-ACCOUNT_ID = config['OANDA']['ACCOUNT_ID']
+API_KEY = config['OANDA2']['API_KEY'] 
+ACCOUNT_ID = config['OANDA2']['ACCOUNT_ID']
 HOSTNAME   = "api-fxpractice.oanda.com"
 STREAMHOST = "stream-fxpractice.oanda.com"
 key = f'Bearer {API_KEY}'
@@ -32,7 +32,14 @@ messages = []
 insts = ctx.account.instruments(ACCOUNT_ID).get('instruments')
 instruments = {i.name:i.dict() for i in insts}
 
-tradeable_instruments = ['EUR_USD', 'EUR_CAD','EUR_AUD', 'EUR_GBP', 'EUR_NZD', 'EUR_CHF', 'EUR_JPY']
+tradeable_instruments = [
+    'EUR_USD', 
+    'EUR_CAD',
+    'EUR_AUD', 
+    'EUR_GBP', 
+    'EUR_NZD', 
+    'EUR_CHF', 
+    'EUR_JPY']
 tradeinsts = ','.join(tradeable_instruments)
 
 
@@ -59,7 +66,7 @@ def notify_account_observers():
         o.on_account_changes()
 
 def run_price_stream():
-    print('running price stream')
+    print('start price stream')
     response = ctxs.pricing.stream(ACCOUNT_ID, instruments=tradeinsts)
     for typ, data in response.parts():
         if typ == "pricing.ClientPrice":
@@ -74,14 +81,14 @@ def run_price_stream():
 
 
 def run_transaction_stream():
-    print('running transaction stream')
+    print('start transaction stream')
     response = ctxs.transaction.stream(ACCOUNT_ID)
     for t, d in response.parts():
         if d.type != "HEARTBEAT":
             notify_transaction_observers(d)
 
 def run_account_update(account, lastTransactionID):
-    print('running account update polling')
+    print('start account polling')
     _lastId = lastTransactionID
 
     while True:
@@ -93,7 +100,7 @@ def run_account_update(account, lastTransactionID):
         _lastId = r.get('lastTransactionID')
         update_account(account, changes, state)
         notify_account_observers()
-        time.sleep(20)
+        time.sleep(30)
 
 def update_trades(account, state):
     for tc in state.trades:
@@ -122,7 +129,6 @@ def update_orders(account, state):
             if o.id == so.id:
                 o.trailingStopValue = so.trailingStopValue
                 o.distance = so.triggerDistance
-
 
 def apply_changes(account, changes: AccountChanges):
     for to in changes.tradesOpened:
@@ -181,7 +187,6 @@ def apply_changes(account, changes: AccountChanges):
             if o.id == otr.id:
                 account.orders.remove(o)
 
-
 def update_attribute(dest, name, value):
     if name in ('orders', 'trades', 'positions'):
         return
@@ -198,6 +203,7 @@ def update_account(account, changes, state):
 
    
 def check_breakeven_for_position(trades, instrument):
+    print('cfg check breakeven', instrument)
     all_breakeven = []
     for t in trades:
         if t.instrument == instrument:
@@ -208,7 +214,6 @@ def check_breakeven_for_position(trades, instrument):
                     or
                     (t.currentUnits < 0 and o.price <= t.price))
     return all(all_breakeven)
-
 
 def get_trades_by_instrument(trades, instrument):
     inst_trades = []

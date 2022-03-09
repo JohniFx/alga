@@ -36,7 +36,7 @@ class Quant():
         for inst in cfg.tradeable_instruments:
             df = self.get_candles(inst, count, tf)
             df.to_pickle(f'./data/{inst}_{tf}.pkl')
-        print('data files have been updated')
+        print('data files updated:', tf, count)
 
     def update_kpi_file(self):
         kpi_data=[]
@@ -44,7 +44,7 @@ class Quant():
             kpi_data.append(self.get_kpi_dict(inst=inst, tf='M5'))
         with open('kpi_data.json', 'w') as write_file:
             json.dump(kpi_data, write_file, indent=2)
-        print('kpi data has been updated')
+        print('kpi_data.json updated')
 
     def get_linreg(self, df):
         x = np.arange(len(df))
@@ -170,7 +170,7 @@ class Quant():
         self.add_kpi(df, inst)
         self.add_stochastic(df, 10, 3)
 
-        # Strategy1
+        # Strategy1most azt csinálo
         cd1 = (df.hilo > 0) & (df.mom_pos > 0) & (
             df.mom_slope > 0) & (df.lr_slope > 0)
         cd2 = (df.hilo < 0) & (df.mom_pos < 0) & (
