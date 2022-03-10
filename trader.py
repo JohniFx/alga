@@ -35,6 +35,7 @@ class Trader():
                     threading.Thread(
                         target=self.check_instrument, args=[i, positioning]).start()
 
+
     def check_instrument(self, inst, positioning=0) -> str:
         # print('  check', inst, positioning)
         signal, signaltype = self.a.get_signal(inst, tf='M5')
