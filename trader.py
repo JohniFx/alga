@@ -34,7 +34,14 @@ class Trader():
                     positioning = 1 if inst_trades[0].currentUnits > 0 else -1
                     threading.Thread(
                         target=self.check_instrument, args=[i, positioning]).start()
-
+                    
+    def is_trade_allowed(self) -> bool:
+        for t in cfg.account.trades:
+            if t.unrealizedPL <= 0:
+                print(
+                    f'RULE: trade #{t.id} {t.instrument} in loss {t.unrealizedPL} wait.')
+                return False
+        return True
 
     def check_instrument(self, inst, positioning=0) -> str:
         # print('  check', inst, positioning)
