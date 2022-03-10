@@ -36,7 +36,7 @@ class Quant():
         for inst in cfg.tradeable_instruments:
             df = self.get_candles(inst, count, tf)
             df.to_pickle(f'./data/{inst}_{tf}.pkl')
-        print('data files updated:', tf, count)
+        # print('data files updated:', tf, count)
 
     def update_kpi_file(self):
         kpi_data=[]
@@ -44,7 +44,7 @@ class Quant():
             kpi_data.append(self.get_kpi_dict(inst=inst, tf='M5'))
         with open('kpi_data.json', 'w') as write_file:
             json.dump(kpi_data, write_file, indent=2)
-        print('kpi_data.json updated')
+        # print('kpi_data.json updated')
 
     def get_linreg(self, df):
         x = np.arange(len(df))
@@ -213,8 +213,8 @@ class Quant():
             lrg=df.lr_slope.iloc[-1],
             sto=df.STO_K.iloc[-1].round(2)
         )
-
-        print(signals)
+        # if (s1!=0) or (s2!=0) or (s3!=0) or (s4!=0):
+        #     print(signals)
         if (s1 == s2) and (s2 == s3) and (s3 == df.lr_slope.iloc[-1]):
             print('** supersignal **')
             return s1, 'XL'

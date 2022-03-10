@@ -39,7 +39,7 @@ tradeable_instruments = [
     'EUR_GBP', 
     'EUR_NZD', 
     'EUR_CHF', 
-    'EUR_JPY']
+    'EUR_JPY', 'GBP_USD', 'GBP_AUD', 'GBP_JPY', 'GBP_CHF']
 tradeinsts = ','.join(tradeable_instruments)
 
 
@@ -48,9 +48,9 @@ transaction_observers = []
 account_observers = []
 
 global_params = dict(
-    tp=10,
-    sl=10,
-    ts=11)
+    tp=50,
+    sl=12,
+    ts=15)
 # print(global_params)
 
 def notify_price_observers(cp):
@@ -169,6 +169,7 @@ def apply_changes(account, changes: AccountChanges):
     for ocr in changes.ordersCreated:
         account.orders.append(ocr)
         for t in account.trades:
+            # AttributeError: 'StopOrder' object has no attribute 'tradeID'
             if t.id == ocr.tradeID:
                 if ocr.type == 'STOP_LOSS':
                     t.stopLossOrderID = ocr.id
@@ -200,10 +201,8 @@ def update_account(account, changes, state):
     update_trades(account, state)
     update_positions(account, state)
     update_orders(account, state)
-
    
 def check_breakeven_for_position(trades, instrument):
-    print('cfg check breakeven', instrument)
     all_breakeven = []
     for t in trades:
         if t.instrument == instrument:
@@ -213,6 +212,8 @@ def check_breakeven_for_position(trades, instrument):
                     (t.currentUnits > 0 and o.price >= t.price)
                     or
                     (t.currentUnits < 0 and o.price <= t.price))
+    if all(all_breakeven):
+        print('cfg check breakeven', instrument,all(all_breakeven) )
     return all(all_breakeven)
 
 def get_trades_by_instrument(trades, instrument):
