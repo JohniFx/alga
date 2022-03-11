@@ -10,3 +10,4 @@ __pycache__/*
 notebook/__pycache__/*
 update.sh
 *.json
+kpi_data.json

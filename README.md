@@ -16,6 +16,10 @@ Some additional ipynb jupyter notebook files also included. They contain backgro
 
 Unfortunately the algo is not successful, still producing losses, so it may be called loss generator or account destroyer.  I have way to many ideas to implement but time is a constraint.
 
+2022-03-10
+
+added a rule to block trading if there is already a trade within loss. 
+
 2022-02-22 comments
 
 main.initial_tradecheck(): at algo start the prog checks any open trades in the  method and processes them according to general trading rules

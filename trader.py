@@ -30,13 +30,17 @@ class Trader():
                 self.check_instrument(i)
             else:
                 if cfg.check_breakeven_for_position(trades, i):
-                    # print('trying to add to breakeven...')
-                    if inst_trades[0].currentUnits > 0:
-                        threading.Thread(
-                            target=self.check_instrument, args=[i, 1]).start()
-                    elif inst_trades[0].currentUnits < 0:
-                        threading.Thread(
-                            target=self.check_instrument, args=[i, -1]).start()
+                    positioning = 1 if inst_trades[0].currentUnits > 0 else -1
+                    threading.Thread(
+                        target=self.check_instrument, args=[i, positioning]).start()
+                    
+    def is_trade_allowed(self) -> bool:
+        for t in cfg.account.trades:
+            if t.unrealizedPL <= 0:
+                print(
+                    f'RULE: trade #{t.id} {t.instrument} in loss {t.unrealizedPL} wait.')
+                return False
+        return True
 
     def check_instrument(self, inst, positioning=0) -> str:
         # print('  check', inst, positioning)
