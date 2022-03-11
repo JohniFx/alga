@@ -14,7 +14,6 @@ class Trader():
 
         trades = cfg.account.trades
         trades.sort(key=lambda x: (x.instrument, x.price))
-        
         for t in cfg.account.trades:
             if t.unrealizedPL <= 0:
                 print(f'RULE: trade #{t.id} {t.instrument} in loss {t.unrealizedPL} wait.')
