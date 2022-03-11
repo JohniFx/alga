@@ -18,7 +18,9 @@ class Main():
         threading.Thread(target=self.update_kpi).start()
         time.sleep(5)
         self.initial_tradecheck()
-        #TODO: ide kell egy általános ellenőrző metodus; minden poziciót ellenőriz, stopot berak ha nincs, breakeven-be huz ha nem lenne
+        # TODO: ide kell egy általános ellenőrző metodus; 
+        # minden poziciót ellenőriz, stopot berak ha nincs, 
+        # breakeven-be huz ha nem lenne
         threading.Thread(target=self.run_check_instruments).start()
 
     def update_kpi(self):
@@ -69,9 +71,7 @@ class Main():
             'MARKET_ORDER_TRADE_CLOSE']
 
         if data.reason in reasons_detailed:
-            print('show closed positions pl')
             msg += f" {data.units} PL:{data.pl}, cost:{data.halfSpreadCost}"
-
         
         print(msg)
 

@@ -11,13 +11,14 @@ class Trader():
 
 
     def check_instruments(self, tradeable_instruments):
-
+        print(f'{u.get_now()}')
         trades = cfg.account.trades
         trades.sort(key=lambda x: (x.instrument, x.price))
-        for t in cfg.account.trades:
-            if t.unrealizedPL <= 0:
-                print(f'RULE: trade #{t.id} {t.instrument} in loss {t.unrealizedPL} wait.')
-                return
+        
+        self.move_stop_to_be()
+
+        if not self.is_trade_allowed():
+            return
 
         for i in tradeable_instruments:
             # print('checking', i)
@@ -30,15 +31,40 @@ class Trader():
                 self.check_instrument(i)
             else:
                 if cfg.check_breakeven_for_position(trades, i):
-                    positioning = 1 if inst_trades[0].currentUnits > 0 else -1
+                    pos = 1 if inst_trades[0].currentUnits > 0 else -1
                     threading.Thread(
-                        target=self.check_instrument, args=[i, positioning]).start()
-                    
+                        target=self.check_instrument, args=[i, pos]).start()
+
+    def move_stop_to_be(self):
+        print('check move_stop_to_be')
+        for t in cfg.account.trades:
+            if t.unrealizedPL<=0:
+                continue
+            trade = dict(
+                instrument=t.instrument,
+                currentUnits=t.currentUnits,
+                unrealizedPL = t.unrealizedPL)
+            for o in cfg.account.orders:
+                if o.id == t.stopLossOrderID:
+                    trade['sl'] = o
+                if o.id == t.trailingStopLossOrderID:
+                    trade['ts'] = o
+            
+            if t.currentUnits > 0:
+                pip = cfg.instruments[t.instrument]['bid'] - t.price
+                print(f'LONG {t.currentUnits} {t.instrument}@{t.price} pip:{pip:.5f}')
+            elif t.currentUnits < 0:
+                pip = t.price - cfg.instruments[t.instrument]['ask'] 
+                print(f'SHRT {t.currentUnits} {t.instrument}@{t.price} pip:{pip:.5f}')
+            pip_pow = pip / pow(10, cfg.instruments[t.instrument]['pipLocation'])
+            print(f"{pip_pow:.2f} > 12 B/E")
+
+
     def is_trade_allowed(self) -> bool:
         for t in cfg.account.trades:
             if t.unrealizedPL <= 0:
                 print(
-                    f'RULE: trade #{t.id} {t.instrument} in loss {t.unrealizedPL} wait.')
+                    f'RULE: trade #{t.id} {t.currentUnits:.0f} {t.instrument} in loss {t.unrealizedPL} wait.')
                 return False
         return True
 
