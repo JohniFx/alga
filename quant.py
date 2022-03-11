@@ -216,7 +216,9 @@ class Quant():
         # if (s1!=0) or (s2!=0) or (s3!=0) or (s4!=0):
         #     print(signals)
         if (s1 == s2) and (s2 == s3) and (s3 == df.lr_slope.iloc[-1]):
+            print('** ----------- **')
             print('** supersignal **')
+            print('** ----------- **')
             return s1, 'XL'
 
         if s3 != 0:

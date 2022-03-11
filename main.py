@@ -6,11 +6,14 @@ import quant
 import threading
 import time
 from datetime import datetime
-__version__ = '2022-02-06'
+__version__ = '2022-03-11'
+import pprint
+
 
 class Main():
     def __init__(self) -> None:
         self.t = trader.Trader()
+        self.stats=cfg.create_stats()
         cfg.price_observers.append(self)
         cfg.transaction_observers.append(self)
         cfg.account_observers.append(self)
@@ -22,6 +25,7 @@ class Main():
         # minden poziciót ellenőriz, stopot berak ha nincs, 
         # breakeven-be huz ha nem lenne
         threading.Thread(target=self.run_check_instruments).start()
+
 
     def update_kpi(self):
         while True:
@@ -44,7 +48,11 @@ class Main():
         #     msg += f" {cp['i']}: {cp['bid']:.5f} / {cp['ask']:.5f}"
         #     print(msg, 'no spread')
 
+    
     def on_data(self, data):
+        if data.type == 'STOP_LOSS_ORDER_REJECT':
+            print(data)
+            
         msg = f"{datetime.now().strftime('%H:%M:%S')}"
         inst = ''
         if hasattr(data, 'instrument'):
@@ -73,7 +81,24 @@ class Main():
         if data.reason in reasons_detailed:
             msg += f" {data.units} PL:{data.pl}, cost:{data.halfSpreadCost}"
         
+        pp = pprint.PrettyPrinter(indent=4)
+        if data.reason == 'TAKE_PROFIT_ORDER':
+            self.stats['count_tp'] += 1
+            self.stats['sum_tp'] += data.pl
+            pp.pprint(self.stats)
+        elif data.reason == 'STOP_LOSS_ORDER':
+            self.stats['count_sl'] += 1
+            self.stats['sum_sl'] += data.pl
+            pp.pprint(self.stats)
+        elif data.reason == 'TRAILING_STOP_LOSS_ORDER':
+            self.stats['count_ts'] += 1
+            self.stats['sum_ts'] += data.pl
+            pp.pprint(self.stats)
+
+
+
         print(msg)
+
 
     def on_account_changes(self):
         # print('on account changes')
@@ -107,7 +132,6 @@ class Main():
                 else:
                     print('Close trade without stop')
                     self.t.close_trade(t)
-
 
 
 if __name__ == '__main__':

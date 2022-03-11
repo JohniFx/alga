@@ -9,9 +9,8 @@ class Trader():
     def __init__(self) -> None:
         self.a = quant.Quant()
 
-
     def check_instruments(self, tradeable_instruments):
-        print(f'{u.get_now()}')
+        print(f'')
         trades = cfg.account.trades
         trades.sort(key=lambda x: (x.instrument, x.price))
         
@@ -21,8 +20,7 @@ class Trader():
             return
 
         for i in tradeable_instruments:
-            # print('checking', i)
-            if 'spread'not in cfg.instruments[i]:
+            if 'spread' not in cfg.instruments[i]:
                 print(f'no spread. no check: {i}') 
                 continue
 
@@ -36,10 +34,10 @@ class Trader():
                         target=self.check_instrument, args=[i, pos]).start()
 
     def move_stop_to_be(self):
-        print('check move_stop_to_be')
         for t in cfg.account.trades:
             if t.unrealizedPL<=0:
                 continue
+
             trade = dict(
                 instrument=t.instrument,
                 currentUnits=t.currentUnits,
@@ -49,22 +47,38 @@ class Trader():
                     trade['sl'] = o
                 if o.id == t.trailingStopLossOrderID:
                     trade['ts'] = o
-            
+            # TODO: 
+            if t.price == trade['sl'].price:
+                # print(f'{u.get_now()} INBE: trade #{t.id} {t.instrument}')
+                continue
+
             if t.currentUnits > 0:
                 pip = cfg.instruments[t.instrument]['bid'] - t.price
-                print(f'LONG {t.currentUnits} {t.instrument}@{t.price} pip:{pip:.5f}')
+                pip_pow = pip / pow(10, cfg.instruments[t.instrument]['pipLocation'])
+                print(f'{u.get_now()} LONG: {t.currentUnits:>5.0f} {t.instrument}@{t.price} {pip_pow:.2f}')
             elif t.currentUnits < 0:
                 pip = t.price - cfg.instruments[t.instrument]['ask'] 
-                print(f'SHRT {t.currentUnits} {t.instrument}@{t.price} pip:{pip:.5f}')
-            pip_pow = pip / pow(10, cfg.instruments[t.instrument]['pipLocation'])
-            print(f"{pip_pow:.2f} > 12 B/E")
+                pip_pow = pip / pow(10, cfg.instruments[t.instrument]['pipLocation'])
+                print(f'{u.get_now()} SHRT: {t.currentUnits:>5.0f} {t.instrument}@{t.price} {pip_pow:.2f}')
+
+            if pip_pow > 12:
+                print(f'{u.get_now()} MOBE {t.instrument}')
+                sl = dict(
+                    price= str(t.price),
+                    type='STOP_LOSS',
+                    tradeID= t.id)
+                cfg.ctx.trade.set_dependent_orders(
+                    cfg.ACCOUNT_ID,
+                    t.id,
+                    stopLoss=sl)
+
 
 
     def is_trade_allowed(self) -> bool:
         for t in cfg.account.trades:
             if t.unrealizedPL <= 0:
                 print(
-                    f'RULE: trade #{t.id} {t.currentUnits:.0f} {t.instrument} in loss {t.unrealizedPL} wait.')
+                    f'{u.get_now()} RULE: trade #{t.id} {t.currentUnits:.0f} {t.instrument} in loss {t.unrealizedPL} wait.')
                 return False
         return True
 
@@ -98,7 +112,7 @@ class Trader():
             stopprice = bid + sl*piploc
             profitPrice = bid - tp*piploc
 
-        msg = (f'{signaltype}: {inst}'
+        msg = (f'{u.get_now()} {signaltype} {inst}'
                f' {units}'
                f' {entry:.5f}'
                f' SL:{stopprice:.5f}'
@@ -172,7 +186,6 @@ class Trader():
             cfg.ctx.trade.close(cfg.ACCOUNT_ID, trade.id, units='ALL')
         else:
             cfg.ctx.trade.close(cfg.ACCOUNT_ID, trade.id, units=str(units))
-
 
     def add_stop(self, trade):
         print('adding stop', trade.id, trade.instrument, trade.currentUnits)

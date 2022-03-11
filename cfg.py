@@ -3,6 +3,7 @@ from v20.account import AccountChanges
 import threading
 import time
 import configparser
+import utils as u
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -33,13 +34,8 @@ insts = ctx.account.instruments(ACCOUNT_ID).get('instruments')
 instruments = {i.name:i.dict() for i in insts}
 
 tradeable_instruments = [
-    'EUR_USD', 
-    'EUR_CAD',
-    'EUR_AUD', 
-    'EUR_GBP', 
-    'EUR_NZD', 
-    'EUR_CHF', 
-    'EUR_JPY', 'GBP_USD', 'GBP_AUD', 'GBP_JPY', 'GBP_CHF']
+    'EUR_USD', 'EUR_CAD', 'EUR_AUD', 'EUR_NZD', 'EUR_CHF', 'EUR_JPY','EUR_GBP', 
+    'GBP_USD', 'GBP_CAD', 'GBP_AUD', 'GBP_NZD', 'GBP_CHF', 'GBP_JPY']
 tradeinsts = ','.join(tradeable_instruments)
 
 
@@ -48,10 +44,20 @@ transaction_observers = []
 account_observers = []
 
 global_params = dict(
-    tp=50,
+    tp=60,
     sl=12,
-    ts=15)
+    ts=24)
 # print(global_params)
+def create_stats()-> dict:
+    stats = dict(
+        count_sl=0,
+        count_ts=0,
+        count_tp=0,
+        sum_sl=0,
+        sum_ts=0,
+        sum_tp=0
+    )
+    return stats
 
 def notify_price_observers(cp):
     for o in price_observers:
@@ -213,7 +219,7 @@ def check_breakeven_for_position(trades, instrument):
                     or
                     (t.currentUnits < 0 and o.price <= t.price))
     if all(all_breakeven):
-        print('cfg check breakeven', instrument,all(all_breakeven) )
+        print(f'{u.get_now()} cfg check breakeven', instrument,all(all_breakeven) )
     return all(all_breakeven)
 
 def get_trades_by_instrument(trades, instrument):
