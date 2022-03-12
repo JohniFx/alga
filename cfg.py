@@ -38,7 +38,7 @@ tradeable_instruments = [
     'GBP_USD', 'GBP_CAD', 'GBP_AUD', 'GBP_NZD', 'GBP_CHF', 'GBP_JPY']
 tradeinsts = ','.join(tradeable_instruments)
 
-
+# observers
 price_observers = []
 transaction_observers = []
 account_observers = []
@@ -47,7 +47,8 @@ global_params = dict(
     tp=60,
     sl=12,
     ts=24)
-# print(global_params)
+
+
 def create_stats()-> dict:
     stats = dict(
         count_sl=0,
@@ -84,7 +85,6 @@ def run_price_stream():
             instruments[data.instrument]['bid']=data.bids[0].price
             instruments[data.instrument]['ask']=data.asks[0].price
             instruments[data.instrument]['spread']=round(data.asks[0].price-data.bids[0].price, instruments[data.instrument]['displayPrecision'])
-
 
 def run_transaction_stream():
     print('start transaction stream')
@@ -207,27 +207,7 @@ def update_account(account, changes, state):
     update_trades(account, state)
     update_positions(account, state)
     update_orders(account, state)
-   
-def check_breakeven_for_position(trades, instrument):
-    all_breakeven = []
-    for t in trades:
-        if t.instrument == instrument:
-            for o in account.orders:
-                if o.id == t.stopLossOrderID:
-                    all_breakeven.append(
-                    (t.currentUnits > 0 and o.price >= t.price)
-                    or
-                    (t.currentUnits < 0 and o.price <= t.price))
-    if all(all_breakeven):
-        print(f'{u.get_now()} cfg check breakeven', instrument,all(all_breakeven) )
-    return all(all_breakeven)
 
-def get_trades_by_instrument(trades, instrument):
-    inst_trades = []
-    for t in trades:
-        if t.instrument == instrument:
-            inst_trades.append(t)
-    return inst_trades
 
 threading.Thread(target=run_price_stream).start()
 threading.Thread(target=run_transaction_stream).start()
