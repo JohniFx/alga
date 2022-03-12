@@ -2,7 +2,7 @@ import v20
 from v20.account import AccountChanges
 import defs
 import time
-import manager as m
+# import manager as m
 from collections import deque
 import os
 import curses
@@ -22,19 +22,19 @@ class TradeManager():
         self.lastpl = 0
         self.new_trade_count = 0
 
-        self.mgr = m.Manager(ctx, defs.ACCOUNT_ID,
-                             run_stream=True,
-                             ms_queue=self.messages,
-                             account=self.account)
+        # self.mgr = m.Manager(ctx, defs.ACCOUNT_ID,
+        #                      run_stream=True,
+        #                      ms_queue=self.messages,
+        #                      account=self.account)
 
         # start threads
-        schedule.every(3).minutes.do(
-            utils.run_threaded, self.mgr.check_instruments)
+        # schedule.every(3).minutes.do(
+        #     utils.run_threaded, self.mgr.check_instruments)
 
         utils.run_threaded(curses.wrapper, args=[self.run, ])
 
         # initial check
-        self.mgr.check_instruments()
+        # self.mgr.check_instruments()
 
         while True:
             schedule.run_pending()
@@ -47,13 +47,13 @@ class TradeManager():
             self.update_account()
             self.show_stat(w)
             self.show_trades(w)
-            self.manage_positions()
-            self.manage_trades()
+            # self.manage_positions()
+            # self.manage_trades()
 
             if self.account.unrealizedPL > (self.account.NAV*0.002):
                 msg = f'Profit realization above: {self.account.NAV*0.002:.4f}'
                 self.messages.append(msg)
-                self.mgr.realize_profit(ratio=.2)
+                # self.mgr.realize_profit(ratio=.2)
 
             time.sleep(15)
 
@@ -231,35 +231,6 @@ class TradeManager():
         for field in state.fields():
             self.update_attribute(self.account, field.name, field.value)
 
-    def update_positions(self, p):
-        # instrument: USD_CHF
-        # pl: -197.288
-        # unrealizedPL: 0.4207
-        # marginUsed: 23.88
-        # resettablePL: -197.288
-        # financing: 5.5264
-        # commission: 0.0
-        # guaranteedExecutionFees: 0.0
-        # long:
-        # units: 0.0
-        # pl: -163.0196
-        # unrealizedPL: 0.0
-        # resettablePL: -163.0196
-        # financing: 5.9687
-        # guaranteedExecutionFees: 0.0
-        # short:
-        # units: -597.0
-        # averagePrice: 0.91918
-        # tradeIDs:
-        # - '147164'
-        # - '147688'
-        # - '147830'
-        # pl: -34.2684
-        # unrealizedPL: 0.4207
-        # resettablePL: -34.2684
-        # financing: -0.4423
-        # guaranteedExecutionFees: 0.0
-        pass
 
     def get_open_positions(self):
         openpos = []

@@ -72,8 +72,6 @@ class Trader():
                     t.id,
                     stopLoss=sl)
 
-
-
     def is_trade_allowed(self) -> bool:
         for t in cfg.account.trades:
             if t.unrealizedPL <= 0:

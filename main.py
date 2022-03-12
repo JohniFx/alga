@@ -21,11 +21,7 @@ class Main():
         threading.Thread(target=self.update_kpi).start()
         time.sleep(5)
         self.initial_tradecheck()
-        # TODO: ide kell egy általános ellenőrző metodus; 
-        # minden poziciót ellenőriz, stopot berak ha nincs, 
-        # breakeven-be huz ha nem lenne
         threading.Thread(target=self.run_check_instruments).start()
-
 
     def update_kpi(self):
         while True:
@@ -48,7 +44,6 @@ class Main():
         #     msg += f" {cp['i']}: {cp['bid']:.5f} / {cp['ask']:.5f}"
         #     print(msg, 'no spread')
 
-    
     def on_data(self, data):
         if data.type == 'STOP_LOSS_ORDER_REJECT':
             print(data)
@@ -98,7 +93,6 @@ class Main():
 
 
         print(msg)
-
 
     def on_account_changes(self):
         # print('on account changes')
