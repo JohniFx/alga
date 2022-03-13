@@ -112,7 +112,7 @@ class Trader():
         piploc = pow(10, cfg.instruments[inst]['pipLocation'])
 
         spread_piploc = spread / piploc
-        print(f'SPREADCONTROL BEFORE MARKET ORDER:{inst}{spread} {spread_piploc}')
+        print(f'SPREADCONTROL BEFORE MARKET ORDER:{inst} {spread} {spread_piploc}')
 
         if signal == 1:
             entry       = ask
@@ -132,9 +132,9 @@ class Trader():
                f' A:{ask:>8.5f}/B:{bid:<8.5f}'
                f' {spread:>6.4f}')
         print(msg)
-        threading.Thread(target=self.place_market, args=[
-                         inst, units, stopprice, profitPrice, signaltype]).start()
-        # self.place_market(inst, units, stopprice, profitPrice, signaltype)
+        threading.Thread(
+            target=self.place_market, 
+            args=[inst, units, stopprice, profitPrice, signaltype]).start()
 
     def place_market(self, inst, units, stopPrice, profitPrice=None, id='0'):
         prec = cfg.instruments[inst]['displayPrecision']
@@ -155,7 +155,6 @@ class Trader():
             stopLossOnFill=sl_on_fill,
             trailingStopLossOnFill=ts_on_fill
         )
-        # print('\n', order)
 
         response = cfg.ctx.order.market(cfg.ACCOUNT_ID, **order)
         id = response.get('orderFillTransaction').id

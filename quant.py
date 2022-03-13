@@ -163,36 +163,37 @@ class Quant():
 
     def get_signal(self, inst, count=15, tf='M5'):
         print(f'{u.get_now()} SGNL: {inst} {count} {tf}')
+
         df = self.get_candles(inst, count, tf)
         self.add_hilo(df)
         self.add_mom(df)
         self.add_kpi(df, inst)
-        self.add_stochastic(df, 10, 3)
+        self.add_stochastic(df)
 
-        # Strategy1most azt csinálo
+        # Strategy1 
         cd1 = (df.hilo > 0) & (df.mom_pos > 0) & (
             df.mom_slope > 0) & (df.lr_slope > 0)
         cd2 = (df.hilo < 0) & (df.mom_pos < 0) & (
             df.mom_slope < 0) & (df.lr_slope < 0)
-        df['signal'] = np.where(cd1, 1, 0)
-        df['signal'] = np.where(cd2, -1, df['signal'])
-        s1 = df.signal.iloc[-1]
+        df['s1'] = np.where(cd1, 1, 0)
+        df['s1'] = np.where(cd2, -1, df['s1'])
+        s1 = df.s1.iloc[-1]
 
         # Strategy2
         c1 = (df.mom < df.mom_q05) & (
             df.mom_slope > 0) & (df.mom_slope.shift(1) > 0)
         c2 = (df.mom > df.mom_q95) & (
             df.mom_slope < 0) & (df.mom_slope.shift(1) < 0)
-        df['signal2'] = np.where(c1, 1, 0)
-        df['signal2'] = np.where(c2, -1, df['signal2'])
-        s2 = df.signal2.iloc[-1]
+        df['s2'] = np.where(c1, 1, 0)
+        df['s2'] = np.where(c2, -1, df['s2'])
+        s2 = df.s2.iloc[-1]
 
         # Strategy3
         sc1 = (df.STO_K > 86) & (df.lr_slope > 0)
         sc2 = (df.STO_K < 14) & (df.lr_slope < 0)
-        df['signal_stoch'] = np.where(sc1, -1, 0)
-        df['signal_stoch'] = np.where(sc2, 1, df['signal_stoch'])
-        s3 = df.signal_stoch.iloc[-1]
+        df['s3'] = np.where(sc1, -1, 0)
+        df['s3'] = np.where(sc2, 1, df['s3'])
+        s3 = df.s3.iloc[-1]
 
         # Strategy4
         cd1 = (df.hilo > 0) & (df.mom_pos < 0) & (
@@ -201,7 +202,7 @@ class Quant():
             df.mom_slope < 0) & (df.lr_slope < 0)
         df['s4'] = np.where(cd1, 1, 0)
         df['s4'] = np.where(cd2, -1, df['s4'])
-        s4 = 0
+        s4 = df.s4.iloc[-1]
 
         signals = dict(
             inst=inst,
@@ -214,10 +215,7 @@ class Quant():
         )
         # if (s1!=0) or (s2!=0) or (s3!=0) or (s4!=0):
         #     print(signals)
-        if (s1 == s2) and (s2 == s3) and (s3 == df.lr_slope.iloc[-1]):
-            print('** ----------- **')
-            print('** supersignal **')
-            print('** ----------- **')
+        if (s1 == s2) and (s2 == s3) and (s3 == s4):
             return s1, 'XL'
 
         if s3 != 0:
@@ -228,8 +226,17 @@ class Quant():
             return s4, 'S4'
         if s1 != 0:
             return s1, 'S1'
-
-        return 0, ''
+        signal = dict(
+            signal = s,
+            signaltype = st,
+            stop_level= 1,
+            stop_dist = 1,
+            target_level = 1,
+            target_dist = 1,
+            risk_reward_ratio = 1,
+            probability = 1
+        )
+        return signal
 
 
 if __name__ == "__main__":
@@ -238,13 +245,11 @@ if __name__ == "__main__":
     try:
         a = Quant()
         a.get_signal('AUD_JPY')
-        for m in cfg.messages:
-            print(m)
     except KeyboardInterrupt:
         sys.exit(1)
         thread.interrupt_main()
         os._exit(1)
-    finally:        
+    finally:
         os._exit(1)
 
 

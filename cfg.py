@@ -77,6 +77,7 @@ def run_price_stream():
     response = ctxs.pricing.stream(ACCOUNT_ID, instruments=tradeinsts)
     for typ, data in response.parts():
         if typ == "pricing.ClientPrice":
+            # print(f'{data.instrument} {data.bids[0].price} {data.tradeable}')
             cp = dict(
                 i=data.instrument,
                 bid=data.bids[0].price,
