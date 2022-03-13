@@ -2,6 +2,7 @@ import cfg
 import numpy as np
 import pandas as pd
 import json, pickle
+import utils as u
 
 __version__ = '2022-01-24'
 
@@ -31,7 +32,6 @@ class Quant():
 
         return pd.DataFrame.from_dict(rows)
 
-    #TODO:  átrakni cfg-be
     def fetch_data(self, tf='M5', count=100):
         for inst in cfg.tradeable_instruments:
             df = self.get_candles(inst, count, tf)
@@ -161,9 +161,8 @@ class Quant():
         if signal == 1:
             pass
 
-    # TODO: update signaling 
     def get_signal(self, inst, count=15, tf='M5'):
-        #print(f'get signal: {inst} {count} {tf}')
+        print(f'{u.get_now()} SGNL: {inst} {count} {tf}')
         df = self.get_candles(inst, count, tf)
         self.add_hilo(df)
         self.add_mom(df)

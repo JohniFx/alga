@@ -9,7 +9,6 @@ import threading
 class Trader():
     def __init__(self) -> None:
         self.initial_tradecheck()
-        self.a = quant.Quant()
 
     def do_trading(self):
         print(f'')
@@ -26,10 +25,9 @@ class Trader():
 
             if len(position) == 0:
                 self.check_instrument(i)
-            else:
-                if self.check_breakeven_for_position(cfg.account.trades, i):
-                    pos = 1 if position[0].currentUnits > 0 else -1
-                    self.check_instrument(i, pos)
+            elif self.check_breakeven_for_position(cfg.account.trades, i):
+                pos = 1 if position[0].currentUnits > 0 else -1
+                self.check_instrument(i, pos)
 
     def check_breakeven_for_position(self, trades, instrument):
         all_breakeven = []
@@ -94,10 +92,11 @@ class Trader():
                 return False
         return True
 
-    def check_instrument(self, inst, positioning=0) -> str:
+    def check_instrument(self, inst:str, positioning:int=0) -> str:
         print(f'{u.get_now()}  check {inst} positioning:{positioning}')
-        signal, signaltype = self.a.get_signal(inst, tf='M5')
-
+        # get signal
+        signal, signaltype = quant.Quant().get_signal(inst, tf='M5')
+        # validate signal
         valid = [(-1, -1), (-1, 0), (1, 0), (1, 1)]
         if (signal, positioning) not in valid:
             return None
@@ -105,25 +104,27 @@ class Trader():
         sl = cfg.global_params['sl']
         tp = cfg.global_params['tp']
         units = int(cfg.account.marginAvailable/100)
+        if signaltype == 'XL': units *= 2
 
-        if signaltype == 'XL':
-            units *= 2
         ask = cfg.instruments[inst]['ask']
         bid = cfg.instruments[inst]['bid']
         spread = cfg.instruments[inst]['spread']
         piploc = pow(10, cfg.instruments[inst]['pipLocation'])
 
+        spread_piploc = spread / piploc
+        print(f'SPREADCONTROL BEFORE MARKET ORDER:{inst}{spread} {spread_piploc}')
+
         if signal == 1:
-            entry = ask
-            stopprice = ask - sl*piploc  # spread excluded if ask - SL
-            profitPrice = ask + tp*piploc
+            entry       = ask
+            stopprice   = entry - sl*piploc
+            profitPrice = entry + tp*piploc
         elif signal == -1:
             units *= -1
-            entry = bid
-            stopprice = bid + sl*piploc
-            profitPrice = bid - tp*piploc
+            entry       = bid
+            stopprice   = entry + sl*piploc
+            profitPrice = entry - tp*piploc
 
-        msg = (f'{u.get_now()} {signaltype} {inst}'
+        msg = (f'{u.get_now()} OPEN {signaltype} {inst}'
                f' {units}'
                f' {entry:.5f}'
                f' SL:{stopprice:.5f}'
