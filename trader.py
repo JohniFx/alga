@@ -79,7 +79,7 @@ class Trader():
             pip_pl = pip / pow(10, cfg.instruments[t.instrument]['pipLocation'])
             print(f'{u.get_now()} NOBE: #{t.id:>5} {t.currentUnits:>5.0f} {t.instrument}@{t.price} {pip_pl:.2f}')
 
-            if pip_pl > 12:
+            if pip_pl > cfg.global_params['be_pips']:
                 print(f'{u.get_now()} MOBE: {t.currentUnits:>5.0f} {t.instrument}@{t.price} {pip_pl:.2f}')
                 self.set_stoploss(t.id, str(t.price))
     
