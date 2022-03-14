@@ -18,6 +18,7 @@ class Trader():
 
     def check_instruments(self):
         for i in cfg.tradeable_instruments:
+            sleep(1)
             if not Trader.is_trade_allowed(): return
             if 'spread' not in cfg.instruments[i]: continue
 
@@ -28,6 +29,7 @@ class Trader():
             elif self.check_breakeven_for_position(cfg.account.trades, i):
                 pos = 1 if position[0].currentUnits > 0 else -1
                 self.check_instrument(i, pos)
+            
 
     def check_breakeven_for_position(self, trades, instrument):
         all_be = []
@@ -68,7 +70,7 @@ class Trader():
             long_be = t.currentUnits > 0 and trade['sl'].price >= t.price
             shrt_be = t.currentUnits < 0 and trade['sl'].price <= t.price
             if long_be or shrt_be:
-                print(f'{u.get_now()} INBE: #{t.id:>5} {t.currentUnits:>5.0f} {t.instrument}@{t.price}')
+                # print(f'{u.get_now()} INBE: #{t.id:>5} {t.currentUnits:>5.0f} {t.instrument}@{t.price}')
                 continue
 
             if t.currentUnits > 0:
@@ -76,7 +78,7 @@ class Trader():
             elif t.currentUnits < 0:
                 pip = t.price - cfg.instruments[t.instrument]['ask']
             pip_pl = pip / pow(10, cfg.instruments[t.instrument]['pipLocation'])
-            print(f'{u.get_now()} NOBE: {t.currentUnits:>5.0f} {t.instrument}@{t.price} {pip_pl:.2f}')
+            # print(f'{u.get_now()} NOBE: {t.currentUnits:>5.0f} {t.instrument}@{t.price} {pip_pl:.2f}')
 
             if pip_pl > 12:
                 print(f'{u.get_now()} MOBE: {t.currentUnits:>5.0f} {t.instrument}@{t.price} {pip_pl:.2f}')
@@ -87,7 +89,7 @@ class Trader():
         for t in cfg.account.trades:
             if t.unrealizedPL <= 0:
                 print(
-                    f'{u.get_now()} RULE: #{t.id:>5} {t.currentUnits:.0f} {t.instrument} in loss {t.unrealizedPL} wait.')
+                    f'{u.get_now()} RULE: #{t.id:>5} {t.currentUnits:>5.0f} {t.instrument} in loss {t.unrealizedPL} wait.')
                 return False
         return True
 
@@ -150,6 +152,12 @@ class Trader():
 
         response = cfg.ctx.order.market(cfg.ACCOUNT_ID, **order)
         id = response.get('orderFillTransaction').id
+        # order['id'] = id
+        # import csv
+        # with open('trade_log.csv', 'w') as f:
+        #     w = csv.DictWriter(f, order.keys())
+        #     # w.writeheader()
+        #     w.writerow(order)
         return id
 
     def place_limit(self, inst, units, entryPrice, stopPrice, profitPrice):

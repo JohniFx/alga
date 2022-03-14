@@ -47,6 +47,9 @@ class Main():
         if data.type == 'STOP_LOSS_ORDER_REJECT':
             print(data)
 
+        if data.type == 'MARKET_ORDER_REJECT':
+            print(data)
+
         types   = ['ORDER_CANCEL','MARKET_ORDER']
         reasons = ['ON_FILL']
         if (data.type in types) or (data.reason in reasons):
