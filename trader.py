@@ -12,14 +12,14 @@ class Trader():
 
     def do_trading(self):
         print(f'')
+        self.initial_tradecheck()
         self.check_trades_for_breakeven()
-        if self.is_trade_allowed(): 
-            self.check_instruments()
+        self.check_instruments()
 
     def check_instruments(self):
         for i in cfg.tradeable_instruments:
-            if 'spread' not in cfg.instruments[i]: 
-                continue
+            if not Trader.is_trade_allowed(): return
+            if 'spread' not in cfg.instruments[i]: continue
 
             position = self.get_trades_by_instrument(cfg.account.trades, i)
 
@@ -30,19 +30,18 @@ class Trader():
                 self.check_instrument(i, pos)
 
     def check_breakeven_for_position(self, trades, instrument):
-        all_breakeven = []
+        all_be = []
         for t in trades:
             if t.instrument == instrument:
                 for o in cfg.account.orders:
                     if o.id == t.stopLossOrderID:
-                        all_breakeven.append(
+                        all_be.append(
                             (t.currentUnits > 0 and o.price >= t.price)
                             or
                             (t.currentUnits < 0 and o.price <= t.price))
-        if all(all_breakeven):
-            print(f'{u.get_now()} cfg check breakeven',
-                  instrument, all(all_breakeven))
-        return all(all_breakeven)
+        if all(all_be):
+            print(f'{u.get_now()} CBFP',instrument, all(all_be))
+        return all(all_be)
 
     def get_trades_by_instrument(self, trades, instrument):
         inst_trades = []
@@ -69,26 +68,26 @@ class Trader():
             long_be = t.currentUnits > 0 and trade['sl'].price >= t.price
             shrt_be = t.currentUnits < 0 and trade['sl'].price <= t.price
             if long_be or shrt_be:
-                print(f'{u.get_now()} INBE: trade #{t.id:>5} {t.instrument}')
+                print(f'{u.get_now()} INBE: #{t.id:>5} {t.currentUnits:>5.0f} {t.instrument}@{t.price}')
                 continue
 
-            pip_pl = pip / pow(10, cfg.instruments[t.instrument]['pipLocation'])
             if t.currentUnits > 0:
                 pip = cfg.instruments[t.instrument]['bid'] - t.price
             elif t.currentUnits < 0:
                 pip = t.price - cfg.instruments[t.instrument]['ask']
+            pip_pl = pip / pow(10, cfg.instruments[t.instrument]['pipLocation'])
             print(f'{u.get_now()} NOBE: {t.currentUnits:>5.0f} {t.instrument}@{t.price} {pip_pl:.2f}')
 
-            if pip_pow > 12:
-                print(f'{u.get_now()} MOBE {t.instrument}')
+            if pip_pl > 12:
+                print(f'{u.get_now()} MOBE: {t.currentUnits:>5.0f} {t.instrument}@{t.price} {pip_pl:.2f}')
                 self.set_stoploss(t.id, str(t.price))
-
-    def is_trade_allowed(self) -> bool:
-        # if there is a negative trade
+    
+    @staticmethod
+    def is_trade_allowed() -> bool:
         for t in cfg.account.trades:
             if t.unrealizedPL <= 0:
                 print(
-                    f'{u.get_now()} RULE: #{t.id} {t.currentUnits:.0f} {t.instrument} in loss {t.unrealizedPL} wait.')
+                    f'{u.get_now()} RULE: #{t.id:>5} {t.currentUnits:.0f} {t.instrument} in loss {t.unrealizedPL} wait.')
                 return False
         return True
 
@@ -197,10 +196,10 @@ class Trader():
         for t in cfg.account.trades:
             if t.stopLossOrderID is None:
                 if t.unrealizedPL >= 0:
-                    self.t.set_stoploss(t.id, str(t.price))
+                    self.set_stoploss(t.id, str(t.price))
                 else:
                     print(u.get_now(), 'Close trade without stop')
-                    self.t.close_trade(t)
+                    self.close_trade(t)
 
     def set_stoploss(self, tradeid:int, price:str):
         sl = dict(

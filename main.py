@@ -15,12 +15,12 @@ class Main():
         cfg.price_observers.append(self)
         cfg.transaction_observers.append(self)
         cfg.account_observers.append(self)
+        time.sleep(5)
 
-        self.t = trader.Trader()
         self.stats=cfg.create_stats()
 
         threading.Thread(target=self.update_kpi).start()
-        threading.Thread(target=self.run_check_instruments).start()
+        threading.Thread(target=Main.run_check_instruments).start()
 
     def update_kpi(self):
         while True:
@@ -29,14 +29,16 @@ class Main():
             q.fetch_data(tf='D', count='10')
             q.update_kpi_file()
             time.sleep(60*30)
-
-    def run_check_instruments(self, n=120):
+    
+    @staticmethod
+    def run_check_instruments(n=120):
         while True:
-            th=threading.Thread(target=self.t.do_trading)
-            th.start()
+            t = trader.Trader()
+            threading.Thread(target=t.do_trading).start()
             time.sleep(n)
 
     def on_tick(self, cp):
+        # margin calculation
         pass
 
     def on_data(self, data):
