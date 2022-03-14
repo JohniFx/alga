@@ -4,7 +4,7 @@ import utils as u
 import quant
 from time import sleep
 import threading
-
+#test:
 
 class Trader():
     def __init__(self) -> None:
@@ -29,7 +29,6 @@ class Trader():
             elif self.check_breakeven_for_position(cfg.account.trades, i):
                 pos = 1 if position[0].currentUnits > 0 else -1
                 self.check_instrument(i, pos)
-            
 
     def check_breakeven_for_position(self, trades, instrument):
         all_be = []
@@ -154,12 +153,6 @@ class Trader():
 
         response = cfg.ctx.order.market(cfg.ACCOUNT_ID, **order)
         id = response.get('orderFillTransaction').id
-        # order['id'] = id
-        # import csv
-        # with open('trade_log.csv', 'w') as f:
-        #     w = csv.DictWriter(f, order.keys())
-        #     # w.writeheader()
-        #     w.writerow(order)
         return id
 
     def place_limit(self, inst, units, entryPrice, stopPrice, profitPrice):
