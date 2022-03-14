@@ -93,17 +93,16 @@ class Trader():
         return True
 
     def check_instrument(self, inst:str, positioning:int=0) -> str:
-        print(f'{u.get_now()}  check {inst} positioning:{positioning}')
+        # print(f'{u.get_now()}  check {inst} positioning:{positioning}')
         # get signal
         signal, signaltype = quant.Quant().get_signal(inst, tf='M5')
-        # validate signal
         valid = [(-1, -1), (-1, 0), (1, 0), (1, 1)]
         if (signal, positioning) not in valid:
             return None
 
         sl = cfg.global_params['sl']
         tp = cfg.global_params['tp']
-        units = int(cfg.account.marginAvailable/100)
+        units = int(cfg.account.marginAvailable/100) * signal
         if signaltype == 'XL': units *= 2
 
         ask = cfg.instruments[inst]['ask']
@@ -112,17 +111,11 @@ class Trader():
         piploc = pow(10, cfg.instruments[inst]['pipLocation'])
 
         spread_piploc = spread / piploc
-        print(f'SPREADCONTROL BEFORE MARKET ORDER:{inst} {spread} {spread_piploc}')
+        print(f'{u.get_now()} SPRD: {inst} {spread} {spread_piploc:.1f}')
 
-        if signal == 1:
-            entry       = ask
-            stopprice   = entry - sl*piploc
-            profitPrice = entry + tp*piploc
-        elif signal == -1:
-            units *= -1
-            entry       = bid
-            stopprice   = entry + sl*piploc
-            profitPrice = entry - tp*piploc
+        entry = ask if signal==1 else bid
+        stopprice = entry - signal * sl * piploc
+        profitPrice = entry + signal * tp * piploc
 
         msg = (f'{u.get_now()} OPEN {signaltype} {inst}'
                f' {units}'

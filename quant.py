@@ -162,7 +162,7 @@ class Quant():
             pass
 
     def get_signal(self, inst, count=15, tf='M5'):
-        print(f'{u.get_now()} SGNL: {inst} {count} {tf}')
+        # print(f'{u.get_now()} SGNL: {inst} {count} {tf}')
 
         df = self.get_candles(inst, count, tf)
         self.add_hilo(df)
