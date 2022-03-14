@@ -7,11 +7,12 @@ import threading
 import time
 from datetime import datetime
 import pprint
-__version__ = '2022-03-11'
+__version__ = '2022-03-14'
 
 
 class Main():
     def __init__(self) -> None:
+        threading.Thread(target=self.restart).start()
         cfg.price_observers.append(self)
         cfg.transaction_observers.append(self)
         cfg.account_observers.append(self)
@@ -97,9 +98,15 @@ class Main():
             return
         pp.pprint(self.stats)
 
+    def restart(self):
+        time.sleep(60*60)
+        import os, sys
+        print(f'\n{u.get_now()} RSTR')
+        #TODO: save variables into file
+        os.execv('./main.py', sys.argv)
 
 if __name__ == '__main__':
     try:
         m = Main()
     except KeyboardInterrupt:
-        print('ide kellene a threadek lezárása')
+        print('close threads gracefully')
