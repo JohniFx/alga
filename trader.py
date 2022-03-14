@@ -112,7 +112,9 @@ class Trader():
         piploc = pow(10, cfg.instruments[inst]['pipLocation'])
 
         spread_piploc = spread / piploc
-        print(f'{u.get_now()} SPRD: {inst} {spread} {spread_piploc:.1f}')
+        if spread_piploc > cfg.global_params['max_spread']:
+            print(f'{u.get_now()} SPRD: {inst} {spread} {spread_piploc:.1f}')
+            return
 
         entry = ask if signal==1 else bid
         stopprice = entry - signal * sl * piploc
