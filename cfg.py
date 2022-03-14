@@ -46,7 +46,7 @@ account_observers = []
 global_params = dict(
     tp=60,
     sl=12,
-    ts=24,
+    ts=15,
     max_spread=3)
 
 
