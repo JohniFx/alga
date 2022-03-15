@@ -215,6 +215,16 @@ class Quant():
         )
         # if (s1!=0) or (s2!=0) or (s3!=0) or (s4!=0):
         #     print(signals)
+        signal = dict(
+            signal = s3,
+            signaltype = 'S3',
+            stop_level= 1,
+            stop_dist = 1,
+            target_level = 1,
+            target_dist = 1,
+            risk_reward_ratio = 1,
+            probability = 1
+        )
         if (s1 == s2) and (s2 == s3) and (s3 == s4):
             return s1, 'XL'
 
@@ -226,16 +236,7 @@ class Quant():
             return s4, 'S4'
         if s1 != 0:
             return s1, 'S1'
-        signal = dict(
-            signal = s,
-            signaltype = st,
-            stop_level= 1,
-            stop_dist = 1,
-            target_level = 1,
-            target_dist = 1,
-            risk_reward_ratio = 1,
-            probability = 1
-        )
+
         return signal
 
 
