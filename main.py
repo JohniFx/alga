@@ -99,7 +99,7 @@ class Main():
         pp.pprint(self.stats)
 
     def restart(self):
-        time.sleep(60*60)
+        time.sleep(15*60)
         import os, sys
         print(f'\n{u.get_now()} RSTR')
         #TODO: save variables into file

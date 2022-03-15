@@ -69,7 +69,7 @@ class Trader():
             long_be = t.currentUnits > 0 and trade['sl'].price >= t.price
             shrt_be = t.currentUnits < 0 and trade['sl'].price <= t.price
             if long_be or shrt_be:
-                print(f'{u.get_now()} INBE: #{t.id:>5} {t.currentUnits:>5.0f} {t.instrument}@{t.price}')
+               # print(f'{u.get_now()} INBE: #{t.id:>5} {t.currentUnits:>5.0f} {t.instrument}@{t.price}')
                 continue
 
             if t.currentUnits > 0:
@@ -82,7 +82,7 @@ class Trader():
             if pip_pl > cfg.global_params['be_pips']:
                 print(f'{u.get_now()} MOBE: {t.currentUnits:>5.0f} {t.instrument}@{t.price} {pip_pl:.2f}')
                 self.set_stoploss(t.id, str(t.price))
-    
+#    
     @staticmethod
     def is_trade_allowed() -> bool:
         for t in cfg.account.trades:
@@ -93,7 +93,7 @@ class Trader():
         return True
 
     def check_instrument(self, inst:str, positioning:int=0) -> str:
-        # print(f'{u.get_now()}  check {inst} positioning:{positioning}')
+        print(f'{u.get_now()}  check {inst} positioning:{positioning}')
         # get signal
         signal, signaltype = quant.Quant().get_signal(inst, tf='M5')
         valid = [(-1, -1), (-1, 0), (1, 0), (1, 1)]
@@ -108,6 +108,7 @@ class Trader():
         ask = cfg.instruments[inst]['ask']
         bid = cfg.instruments[inst]['bid']
         spread = cfg.instruments[inst]['spread']
+        print(f"piplocation: {inst} {cfg.instruments[inst]['pipLocation']}")
         piploc = pow(10, cfg.instruments[inst]['pipLocation'])
 
         spread_piploc = spread / piploc
