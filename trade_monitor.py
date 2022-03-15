@@ -2,4 +2,4 @@
 
 from datetime import datetime
 with open('changelog', 'a' ) as file:
-    file.write(f'{datetime.now()} changelog')
+    file.write(f'\n{datetime.now()} changelog')
