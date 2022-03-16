@@ -75,7 +75,7 @@ class Trader():
             elif t.currentUnits < 0:
                 pip = t.price - cfg.instruments[t.instrument]['ask']
             pip_pl = pip / pow(10, cfg.instruments[t.instrument]['pipLocation'])
-            print(f'{u.get_now()} NOBE: #{t.id:>5} {t.currentUnits:>5.0f} {t.instrument}@{t.price} {pip_pl:.2f}')
+            print(f'{u.get_now()} NOBE: #{t.id:>5} {t.currentUnits:>5.0f} {t.instrument}@{t.price:<8.5f} {pip_pl:>5.2f}')
 
             if pip_pl > cfg.global_params['be_pips']:
                 print(f'{u.get_now()} MOBE: {t.currentUnits:>5.0f} {t.instrument}@{t.price} {pip_pl:.2f}')
@@ -84,8 +84,7 @@ class Trader():
                     sl_price = t.price + be_sl
                 else:
                     sl_price = t.price - be_sl
-                prec = cfg.instruments[t.instrument]['displayPrecision']
-                print(f'MOBE {sl_price:.{prec}f}', )
+
                 self.set_stoploss(t.id, sl_price, t.instrument)
 
 
