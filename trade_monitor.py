@@ -1,5 +1,10 @@
 #!/usr/bin/python3
 
 from datetime import datetime
-with open('changelog', 'a' ) as file:
+import os
+
+cp = os.path.dirname(os.path.abspath(__file__))
+
+with open(f'{cp}/changelog', 'a' ) as file:
     file.write(f'\n{datetime.now()} changelog')
+    print(datetime.now(), 'change log updated')
