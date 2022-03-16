@@ -4,7 +4,6 @@ import utils as u
 import quant
 from time import sleep
 import threading
-#test:
 
 class Trader():
     def __init__(self) -> None:
