@@ -79,8 +79,17 @@ class Trader():
 
             if pip_pl > cfg.global_params['be_pips']:
                 print(f'{u.get_now()} MOBE: {t.currentUnits:>5.0f} {t.instrument}@{t.price} {pip_pl:.2f}')
-                self.set_stoploss(t.id, str(t.price))
-#    
+                be_sl = cfg.global_params['be_sl'] *pow(10, cfg.instruments[t.instrument]['pipLocation'])
+                if t.currentUnits>0:
+                    sl_price = t.price + be_sl
+                else:
+                    sl_price = t.price - be_sl
+                prec = cfg.instruments[t.instrument]['displayPrecision']
+                print(f'MOBE {sl_price:.{prec}f}', )
+                self.set_stoploss(t.id, sl_price, t.instrument)
+
+
+
     @staticmethod
     def is_trade_allowed() -> bool:
         for t in cfg.account.trades:
@@ -91,7 +100,7 @@ class Trader():
         return True
 
     def check_instrument(self, inst:str, positioning:int=0) -> str:
-        print(f'{u.get_now()}  check {inst} positioning:{positioning}')
+        # print(f'{u.get_now()}  check {inst} positioning:{positioning}')
         # get signal
         signal, signaltype = quant.Quant().get_signal(inst, tf='M5')
         valid = [(-1, -1), (-1, 0), (1, 0), (1, 1)]
@@ -106,11 +115,11 @@ class Trader():
         ask = cfg.instruments[inst]['ask']
         bid = cfg.instruments[inst]['bid']
         spread = cfg.instruments[inst]['spread']
-        print(f"piplocation: {inst} {cfg.instruments[inst]['pipLocation']}")
+        # print(f"piplocation: {inst} {cfg.instruments[inst]['pipLocation']}")
         piploc = pow(10, cfg.instruments[inst]['pipLocation'])
 
         spread_piploc = spread / piploc
-        print(f'{u.get_now()} SPRD: {inst} {spread} {spread_piploc:.1f}')
+        #print(f'{u.get_now()} SPRD: {inst} {spread} {spread_piploc:.1f}')
         if spread_piploc > cfg.global_params['max_spread']:
             return
 
@@ -198,14 +207,15 @@ class Trader():
         for t in cfg.account.trades:
             if t.stopLossOrderID is None:
                 if t.unrealizedPL >= 0:
-                    self.set_stoploss(t.id, str(t.price))
+                    self.set_stoploss(t.id, t.price, t.instrument)
                 else:
                     print(u.get_now(), 'Close trade without stop')
                     self.close_trade(t)
 
-    def set_stoploss(self, tradeid:int, price:str):
+    def set_stoploss(self, tradeid:int, price:float, inst:str):
+        prec = cfg.instruments[inst]['displayPrecision']
         sl = dict(
-            price=price,
+            price=f'{price:.{prec}f}',
             type='STOP_LOSS',
             tradeID=tradeid
         )

@@ -49,7 +49,8 @@ global_params = dict(
     sl=12,
     ts=15,
     max_spread=3,
-    be_pips = 11)
+    be_pips = 11,
+    be_sl = 1)
 
 
 def create_stats()-> dict:
