@@ -29,7 +29,6 @@ account, lastTransactionID = get_account()
 
 messages = []
 
-# TODO: a spread miatt ezt is időszakosan frissíteni
 insts = ctx.account.instruments(ACCOUNT_ID).get('instruments')
 instruments = {i.name:i.dict() for i in insts}
 
@@ -101,7 +100,6 @@ def run_transaction_stream():
 def run_account_update(account, lastTransactionID):
     print('start account polling')
     _lastId = lastTransactionID
-
     while True:
         r = ctx.account.changes(
             ACCOUNT_ID,
@@ -114,25 +112,24 @@ def run_account_update(account, lastTransactionID):
         time.sleep(30)
 
 def update_trades(account, state):
-    for tc in state.trades:
-        for t in account.trades:
-            if t.id == tc.id:
-                t.unrealizedPL = tc.unrealizedPL
-                t.marginUsed = tc.marginUsed
+    for st in state.trades:
+        for at in account.trades:
+            if at.id == st.id:
+                at.unrealizedPL = st.unrealizedPL
+                at.marginUsed = st.marginUsed
 
 def update_fields(account, state):
     for field in state.fields():
         update_attribute(account, field.name, field.value)
 
 def update_positions(account, state):
-    for po in state.positions:
-        for p in account.positions:
-            if p.instrument == po.instrument:
-                p.netUnrealizedPL = po.netUnrealizedPL
-                p.longUnrealizedPL = po.longUnrealizedPL
-                p.shortUnrealizedPL = po.shortUnrealizedPL
-                p.marginUsed = po.marginUsed
-                # update short.tradeIDs, units, averagePrice
+    for sp in state.positions:
+        for ap in account.positions:
+            if ap.instrument == sp.instrument:
+                ap.netUnrealizedPL = sp.netUnrealizedPL
+                ap.longUnrealizedPL = sp.longUnrealizedPL
+                ap.shortUnrealizedPL = sp.shortUnrealizedPL
+                ap.marginUsed = sp.marginUsed
 
 def update_orders(account, state):
     for so in state.orders:
