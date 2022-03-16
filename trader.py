@@ -17,7 +17,6 @@ class Trader():
 
     def check_instruments(self):
         for i in cfg.tradeable_instruments:
-            sleep(1)
             if not Trader.is_trade_allowed(): return
             if 'spread' not in cfg.instruments[i]: continue
 
