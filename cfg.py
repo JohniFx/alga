@@ -214,4 +214,3 @@ def update_account(account, changes, state):
 threading.Thread(target=run_price_stream).start()
 threading.Thread(target=run_transaction_stream).start()
 threading.Thread(target=run_account_update, args=[account, lastTransactionID]).start()
-

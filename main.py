@@ -8,7 +8,7 @@ import time
 from datetime import datetime
 import pprint
 import utils as u
-__version__ = '2022-03-15'
+__version__ = '2022-03-16'
 
 
 class Main():
