@@ -202,7 +202,7 @@ class Trader():
                     print(u.get_now(), 'Close trade without stop')
                     self.close_trade(t)
 
-    def check_before_stopmove(tradeid: int, new_sl: float):
+    def check_before_stopmove(self, tradeid: int, new_sl: float):
         t = u.get_trade_by_id(tradeid)
         sl = u.get_order_by_id(t.stopLossOrderID)
         if t.currentUnits>0 and sl.price > new_sl:
@@ -212,7 +212,7 @@ class Trader():
         return True
 
     def set_stoploss(self, tradeid:int, price:float, inst:str):
-        if not check_before_stopmove(tradeid, price):
+        if not self.check_before_stopmove(tradeid, price):
             print('Pre stop move check fails:', tradeid, price)
             return
         
