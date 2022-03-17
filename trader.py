@@ -54,28 +54,47 @@ class Trader():
             if t.unrealizedPL <= 0:
                 continue
 
-            trade = dict(
-                instrument=t.instrument,
-                currentUnits=t.currentUnits,
-                unrealizedPL=t.unrealizedPL)
-            for o in cfg.account.orders:
-                if o.id == t.stopLossOrderID:
-                    trade['sl'] = o
-                if o.id == t.trailingStopLossOrderID:
-                    trade['ts'] = o
+            sl  = u.get_order_by_id(t.stopLossOrderID)
+            ts  = u.get_order_by_id(t.trailingStopLossOrderID)
 
-            long_be = t.currentUnits > 0 and trade['sl'].price >= t.price
-            shrt_be = t.currentUnits < 0 and trade['sl'].price <= t.price
+            # ha már be-ben van
+            long_be = t.currentUnits > 0 and sl.price >= t.price
+            shrt_be = t.currentUnits < 0 and sl.price <= t.price
             if long_be or shrt_be:
-               # print(f'{u.get_now()} INBE: #{t.id:>5} {t.currentUnits:>5.0f} {t.instrument}@{t.price}')
+               print(f'{u.get_now()}',
+                     f' INBE: #{t.id:>5}',
+                     f' {t.currentUnits:>5.0f}',
+                     f' {t.instrument}@{t.price}',
+                     f' SL: {sl.price}')
                 continue
+            
+            d = 1 if t.currentUnits > 0 else -1
 
             if t.currentUnits > 0:
                 pip = cfg.instruments[t.instrument]['bid'] - t.price
             elif t.currentUnits < 0:
                 pip = t.price - cfg.instruments[t.instrument]['ask']
+
             pip_pl = pip / pow(10, cfg.instruments[t.instrument]['pipLocation'])
             print(f'{u.get_now()} NOBE: #{t.id:>5} {t.currentUnits:>5.0f} {t.instrument}@{t.price:<8.5f} {pip_pl:>5.2f}')
+
+            # már b/e
+            # if sl >= e:
+            #     # check 2nd level b/e
+            #     # check position average vs pos b/e
+            #     pass
+
+            # # még nincs b/e
+            # if e > sl:
+            #     # check primer b/e
+            #     if p > (e + be_pips):
+
+            #     # check secunder b/e
+            #     if p > (e + 2*be_pips):
+            #         move_stop()
+            #     pass
+
+            
 
             if pip_pl > cfg.global_params['be_pips']:
                 print(f'{u.get_now()} MOBE: {t.currentUnits:>5.0f} {t.instrument}@{t.price} {pip_pl:.2f}')
