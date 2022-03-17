@@ -52,6 +52,8 @@ class Main():
         if data.type == 'MARKET_ORDER_REJECT':
             print(data)
 
+        ORDER_FILL.MARKET_ORDER_POSITION_CLOSEOUT
+
         types   = ['ORDER_CANCEL','MARKET_ORDER']
         reasons = ['ON_FILL']
         if (data.type in types) or (data.reason in reasons):
@@ -67,7 +69,8 @@ class Main():
             'TRAILING_STOP_LOSS_ORDER',
             'TAKE_PROFIT_ORDER', 
             'STOP_LOSS_ORDER', 
-            'MARKET_ORDER_TRADE_CLOSE']
+            'MARKET_ORDER_TRADE_CLOSE',
+            'MARKET_ORDER_POSITION_CLOSEOUT']
 
         if data.reason in reasons_detailed:
             msg += f" {data.units} PL:{data.pl}, cost:{data.halfSpreadCost}"

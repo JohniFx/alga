@@ -51,21 +51,14 @@ class Trader():
 
     def check_trades_for_breakeven(self):
         for t in cfg.account.trades:
+            
+            # still in loss
             if t.unrealizedPL <= 0:
                 continue
 
+            # already in b/e
             sl  = u.get_order_by_id(t.stopLossOrderID)
-            ts  = u.get_order_by_id(t.trailingStopLossOrderID)
-
-            # ha már be-ben van
-            long_be = t.currentUnits > 0 and sl.price >= t.price
-            shrt_be = t.currentUnits < 0 and sl.price <= t.price
-            if long_be or shrt_be:
-                print(f'{u.get_now()}',
-                     f' INBE: #{t.id:>5}',
-                     f' {t.currentUnits:>5.0f}',
-                     f' {t.instrument}@{t.price}',
-                     f' SL: {sl.price}')
+            if (t.currentUnits > 0 and sl.price >= t.price) or (t.currentUnits < 0 and sl.price <= t.price):
                 continue
             
             if t.currentUnits > 0:
@@ -74,23 +67,6 @@ class Trader():
                 pip = t.price - cfg.instruments[t.instrument]['ask']
             pip_pl = pip / pow(10, cfg.instruments[t.instrument]['pipLocation'])
             print(f'{u.get_now()} NOBE: #{t.id:>5} {t.currentUnits:>5.0f} {t.instrument}@{t.price:<8.5f} {pip_pl:>5.2f}')
-
-            # már b/e
-            # if t.currentUnits > 0:
-            #     if sl.price >= t.price:
-            #     # check 2nd level b/e
-            #     # check position average vs pos b/e
-            #     pass
-
-            # # még nincs b/e
-            # if e > sl:
-            #     # check primer b/e
-            #     if p > (e + be_pips):
-
-            #     # check secunder b/e
-            #     if p > (e + 2*be_pips):
-            #         move_stop()
-            #     pass
 
             if pip_pl > cfg.global_params['be_pips']:
                 print(f'{u.get_now()} MOBE: {t.currentUnits:>5.0f} {t.instrument}@{t.price} {pip_pl:.2f}')
@@ -226,7 +202,20 @@ class Trader():
                     print(u.get_now(), 'Close trade without stop')
                     self.close_trade(t)
 
+    def check_before_stopmove(tradeid: int, new_sl: float):
+        t = u.get_trade_by_id(tradeid)
+        sl = u.get_order_by_id(t.stopLossOrderID)
+        if t.currentUnits>0 and sl.price > new_sl:
+            return False
+        if t.currentUnits<0 and sl.price < new_sl:
+            return False
+        return True
+
     def set_stoploss(self, tradeid:int, price:float, inst:str):
+        if not check_before_stopmove(tradeid, price):
+            print('Pre stop move check fails:', tradeid, price)
+            return
+        
         prec = cfg.instruments[inst]['displayPrecision']
         sl = dict(
             price=f'{price:.{prec}f}',
