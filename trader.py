@@ -61,15 +61,13 @@ class Trader():
             long_be = t.currentUnits > 0 and sl.price >= t.price
             shrt_be = t.currentUnits < 0 and sl.price <= t.price
             if long_be or shrt_be:
-                print(f'{u.get_now()}',
+               print(f'{u.get_now()}',
                      f' INBE: #{t.id:>5}',
                      f' {t.currentUnits:>5.0f}',
                      f' {t.instrument}@{t.price}',
                      f' SL: {sl.price}')
                 continue
             
-            d = 1 if t.currentUnits > 0 else -1
-
             if t.currentUnits > 0:
                 pip = cfg.instruments[t.instrument]['bid'] - t.price
             elif t.currentUnits < 0:

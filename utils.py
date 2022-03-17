@@ -1,3 +1,4 @@
+import cfg
 from datetime import datetime
 import v20
 import threading
