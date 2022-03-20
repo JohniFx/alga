@@ -237,13 +237,5 @@ class Quant():
 
 
 if __name__ == "__main__":
-    import sys
-    import os
     print('Testing quant')
-    try:
-        a = Quant()
-        a.get_signal('AUD_JPY')
-    except KeyboardInterrupt:
-        sys.exit(1)
-    finally:
-        os._exit(1)
+    Quant().get_signal('AUD_JPY')
