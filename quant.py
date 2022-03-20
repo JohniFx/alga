@@ -1,9 +1,7 @@
-import cfg
-import numpy as np
 import pandas as pd
+import numpy as np
 import json
-import pickle
-import utils as u
+import cfg
 
 __version__ = '2022-01-24'
 
@@ -37,12 +35,12 @@ class Quant():
         # print('data files updated:', tf, count)
 
     def update_kpi_file(self):
-        kpi_data = []
-        for inst in cfg.tradeable_instruments:
-            kpi_data.append(self.get_kpi_dict(inst=inst, tf='M5'))
         with open('kpi_data.json', 'w') as write_file:
-            json.dump(kpi_data, write_file, indent=2)
-        # print('kpi_data.json updated')
+            json.dump(self.get_kpi_data(), write_file, indent=2)
+
+    def get_kpi_data(self, tf='M5'):
+        for inst in cfg.tradeable_instruments:
+            yield self.get_kpi_dict(inst=inst, tf=tf)
 
     def get_linreg(self, df):
         x = np.arange(len(df))
@@ -247,7 +245,5 @@ if __name__ == "__main__":
         a.get_signal('AUD_JPY')
     except KeyboardInterrupt:
         sys.exit(1)
-        thread.interrupt_main()
-        os._exit(1)
     finally:
         os._exit(1)
