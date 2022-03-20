@@ -19,7 +19,7 @@ class Main():
         cfg.account_observers.append(self)
         time.sleep(5)
 
-        self.stats=cfg.create_stats()
+        self.stats = cfg.create_stats()
 
         threading.Thread(target=self.update_kpi).start()
         threading.Thread(target=Main.run_check_instruments).start()
@@ -31,7 +31,7 @@ class Main():
             q.fetch_data(tf='D', count='10')
             q.update_kpi_file()
             time.sleep(60*30)
-    
+
     @staticmethod
     def run_check_instruments(n=120):
         while True:
@@ -52,9 +52,7 @@ class Main():
         if data.type == 'MARKET_ORDER_REJECT':
             print(data)
 
-        ORDER_FILL.MARKET_ORDER_POSITION_CLOSEOUT
-
-        types   = ['ORDER_CANCEL','MARKET_ORDER']
+        types = ['ORDER_CANCEL', 'MARKET_ORDER']
         reasons = ['ON_FILL']
         if (data.type in types) or (data.reason in reasons):
             return
@@ -64,11 +62,11 @@ class Main():
         if hasattr(data, 'instrument'):
             inst = data.instrument
         msg += f" {data.id} {data.type}.{data.reason} {inst}"
-        
-        reasons_detailed=[
+
+        reasons_detailed = [
             'TRAILING_STOP_LOSS_ORDER',
-            'TAKE_PROFIT_ORDER', 
-            'STOP_LOSS_ORDER', 
+            'TAKE_PROFIT_ORDER',
+            'STOP_LOSS_ORDER',
             'MARKET_ORDER_TRADE_CLOSE',
             'MARKET_ORDER_POSITION_CLOSEOUT']
 
@@ -78,13 +76,13 @@ class Main():
 
     def on_account_changes(self):
         # print('on account changes')
-        if datetime.now().minute%15==0:
+        if datetime.now().minute % 15 == 0:
             msg = f"{datetime.now().strftime('%H:%M:%S')}"
-            msg+= f" {float(cfg.account.NAV):>7.2f}"
-            msg+= f" {float(cfg.account.unrealizedPL):>8.4f}"
-            msg+= f" t:{cfg.account.openTradeCount}"
-            msg+= f" o:{cfg.account.pendingOrderCount}"
-            msg+= f" p:{cfg.account.openPositionCount}"
+            msg += f" {float(cfg.account.NAV):>7.2f}"
+            msg += f" {float(cfg.account.unrealizedPL):>8.4f}"
+            msg += f" t:{cfg.account.openTradeCount}"
+            msg += f" o:{cfg.account.pendingOrderCount}"
+            msg += f" p:{cfg.account.openPositionCount}"
             print(msg)
 
     def update_stats(self, data):
@@ -104,10 +102,12 @@ class Main():
 
     def restart(self):
         time.sleep(45*60)
-        import os, sys
+        import os
+        import sys
         print(f'\n{u.get_now()} RSTR')
-        #TODO: save variables into file
+        # TODO: save variables into file
         os.execv('./main.py', sys.argv)
+
 
 if __name__ == '__main__':
     try:

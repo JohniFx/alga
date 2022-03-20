@@ -1,24 +1,24 @@
 import cfg
 import numpy as np
 import pandas as pd
-import json, pickle
+import json
+import pickle
 import utils as u
 
 __version__ = '2022-01-24'
 
+
 class Quant():
     def __init__(self) -> None:
         pass
-    
-    def get_candles(self, inst, count=15, timeframe='M5'):
-        params = dict(
-            price='MBA',
-            granularity=timeframe,
-            count=count)
 
+    def get_candles(self, inst, count=15, tf='M5'):
+        params = dict(price='MBA', granularity=tf, count=count)
         candles = cfg.ctx.instrument.candles(inst, **params).get('candles')
+        return pd.DataFrame.from_dict(Quant.get_rows(candles))
 
-        rows = []
+    @ staticmethod
+    def get_rows(candles):
         for c in candles:
             c = c.dict()
             row = {}
@@ -28,9 +28,7 @@ class Quant():
             for p in ['mid', 'bid', 'ask']:
                 for oh in 'ohlc':
                     row[f'{p}_{oh}'] = float(c[p][oh])
-            rows.append(row)
-
-        return pd.DataFrame.from_dict(rows)
+            yield(row)
 
     def fetch_data(self, tf='M5', count=100):
         for inst in cfg.tradeable_instruments:
@@ -39,7 +37,7 @@ class Quant():
         # print('data files updated:', tf, count)
 
     def update_kpi_file(self):
-        kpi_data=[]
+        kpi_data = []
         for inst in cfg.tradeable_instruments:
             kpi_data.append(self.get_kpi_dict(inst=inst, tf='M5'))
         with open('kpi_data.json', 'w') as write_file:
@@ -170,7 +168,7 @@ class Quant():
         self.add_kpi(df, inst)
         self.add_stochastic(df)
 
-        # Strategy1 
+        # Strategy1
         cd1 = (df.hilo > 0) & (df.mom_pos > 0) & (
             df.mom_slope > 0) & (df.lr_slope > 0)
         cd2 = (df.hilo < 0) & (df.mom_pos < 0) & (
@@ -213,17 +211,17 @@ class Quant():
             lrg=df.lr_slope.iloc[-1],
             sto=df.STO_K.iloc[-1].round(2)
         )
-        # if (s1!=0) or (s2!=0) or (s3!=0) or (s4!=0):
-        #     print(signals)
+        if (s1 != 0) or (s2 != 0) or (s3 != 0) or (s4 != 0):
+            print(signals)
         signal = dict(
-            signal = s3,
-            signaltype = 'S3',
-            stop_level= 1,
-            stop_dist = 1,
-            target_level = 1,
-            target_dist = 1,
-            risk_reward_ratio = 1,
-            probability = 1
+            signal=s3,
+            signaltype='S3',
+            stop_level=1,
+            stop_dist=1,
+            target_level=1,
+            target_dist=1,
+            risk_reward_ratio=1,
+            probability=1
         )
         if (s1 == s2) and (s2 == s3) and (s3 == s4):
             return s1, 'XL'
@@ -241,7 +239,8 @@ class Quant():
 
 
 if __name__ == "__main__":
-    import sys, os
+    import sys
+    import os
     print('Testing quant')
     try:
         a = Quant()
@@ -252,5 +251,3 @@ if __name__ == "__main__":
         os._exit(1)
     finally:
         os._exit(1)
-
-
