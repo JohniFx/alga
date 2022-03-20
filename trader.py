@@ -1,24 +1,26 @@
 import cfg
-import v20
 import utils as u
 import quant
-from time import sleep
 import threading
+import datetime
+
 
 class Trader():
     def __init__(self) -> None:
         self.initial_tradecheck()
 
     def do_trading(self):
-        print(f'')
+        print('')
         self.initial_tradecheck()
         self.check_trades_for_breakeven()
         self.check_instruments()
 
     def check_instruments(self):
         for i in cfg.tradeable_instruments:
-            if not Trader.is_trade_allowed(): return
-            if 'spread' not in cfg.instruments[i]: continue
+            if not Trader.is_trade_allowed():
+                return
+            if 'spread' not in cfg.instruments[i]:
+                continue
 
             position = self.get_trades_by_instrument(cfg.account.trades, i)
 
@@ -39,7 +41,7 @@ class Trader():
                             or
                             (t.currentUnits < 0 and o.price <= t.price))
         if all(all_be):
-            print(f'{u.get_now()} CBFP',instrument, all(all_be))
+            print(f'{u.get_now()} CBFP', instrument, all(all_be))
         return all(all_be)
 
     def get_trades_by_instrument(self, trades, instrument):
@@ -51,45 +53,51 @@ class Trader():
 
     def check_trades_for_breakeven(self):
         for t in cfg.account.trades:
-            
+
             # still in loss
             if t.unrealizedPL <= 0:
                 continue
 
             # already in b/e
-            sl  = u.get_order_by_id(t.stopLossOrderID)
-            if (t.currentUnits > 0 and sl.price >= t.price) or (t.currentUnits < 0 and sl.price <= t.price):
+            sl = u.get_order_by_id(t.stopLossOrderID)
+            cu = t.currentUnits
+            if ((cu > 0 and sl.price >= t.price) or
+                    (cu < 0 and sl.price <= t.price)):
                 continue
-            
-            if t.currentUnits > 0:
+
+            if cu > 0:
                 pip = cfg.instruments[t.instrument]['bid'] - t.price
             elif t.currentUnits < 0:
                 pip = t.price - cfg.instruments[t.instrument]['ask']
-            pip_pl = pip / pow(10, cfg.instruments[t.instrument]['pipLocation'])
-            print(f'{u.get_now()} NOBE: #{t.id:>5} {t.currentUnits:>5.0f} {t.instrument}@{t.price:<8.5f} {pip_pl:>5.2f}')
+            pip_pl = pip / \
+                pow(10, cfg.instruments[t.instrument]['pipLocation'])
+            print(f'{u.get_now()} NOBE: #{t.id:>5} {cu:>5.0f}',
+                  f' {t.instrument}@{t.price:<8.5f} {pip_pl:>5.2f}')
 
             if pip_pl > cfg.global_params['be_pips']:
-                print(f'{u.get_now()} MOBE: {t.currentUnits:>5.0f} {t.instrument}@{t.price} {pip_pl:.2f}')
-                be_sl = cfg.global_params['be_sl'] *pow(10, cfg.instruments[t.instrument]['pipLocation'])
-                if t.currentUnits>0:
+                print(f'{u.get_now()} MOBE: {cu:>5.0f}',
+                      f' {t.instrument} {pip_pl:.2f}')
+                be_sl = cfg.global_params['be_sl'] *\
+                    pow(10, cfg.instruments[t.instrument]['pipLocation'])
+                if t.currentUnits > 0:
                     sl_price = t.price + be_sl
                 else:
                     sl_price = t.price - be_sl
 
                 self.set_stoploss(t.id, sl_price, t.instrument)
 
-
-
-    @staticmethod
+    @ staticmethod
     def is_trade_allowed() -> bool:
         for t in cfg.account.trades:
             if t.unrealizedPL <= 0:
                 print(
-                    f'{u.get_now()} RULE: #{t.id:>5} {t.currentUnits:>5.0f} {t.instrument} in loss {t.unrealizedPL} wait.')
+                    f'{u.get_now()} RULE: #{t.id:>5}',
+                    f' {t.currentUnits:>5.0f}',
+                    f' {t.instrument} in loss {t.unrealizedPL} wait.')
                 return False
         return True
 
-    def check_instrument(self, inst:str, positioning:int=0) -> str:
+    def check_instrument(self, inst: str, positioning: int = 0) -> str:
         # print(f'{u.get_now()}  check {inst} positioning:{positioning}')
         # get signal
         signal, signaltype = quant.Quant().get_signal(inst, tf='M5')
@@ -100,7 +108,8 @@ class Trader():
         sl = cfg.global_params['sl']
         tp = cfg.global_params['tp']
         units = int(cfg.account.marginAvailable/100) * signal
-        if signaltype == 'XL': units *= 2
+        if signaltype == 'XL':
+            units *= 2
 
         ask = cfg.instruments[inst]['ask']
         bid = cfg.instruments[inst]['bid']
@@ -109,11 +118,11 @@ class Trader():
         piploc = pow(10, cfg.instruments[inst]['pipLocation'])
 
         spread_piploc = spread / piploc
-        #print(f'{u.get_now()} SPRD: {inst} {spread} {spread_piploc:.1f}')
+        # print(f'{u.get_now()} SPRD: {inst} {spread} {spread_piploc:.1f}')
         if spread_piploc > cfg.global_params['max_spread']:
             return
 
-        entry = ask if signal==1 else bid
+        entry = ask if signal == 1 else bid
         stopprice = entry - signal * sl * piploc
         profitPrice = entry + signal * tp * piploc
 
@@ -126,7 +135,7 @@ class Trader():
                f' {spread:>6.4f}')
         print(msg)
         threading.Thread(
-            target=self.place_market, 
+            target=self.place_market,
             args=[inst, units, stopprice, profitPrice, signaltype]).start()
 
     def place_market(self, inst, units, stopPrice, profitPrice=None, id='0'):
@@ -205,17 +214,17 @@ class Trader():
     def check_before_stopmove(self, tradeid: int, new_sl: float):
         t = u.get_trade_by_id(tradeid)
         sl = u.get_order_by_id(t.stopLossOrderID)
-        if t.currentUnits>0 and sl.price > new_sl:
+        if t.currentUnits > 0 and sl.price > new_sl:
             return False
-        if t.currentUnits<0 and sl.price < new_sl:
+        if t.currentUnits < 0 and sl.price < new_sl:
             return False
         return True
 
-    def set_stoploss(self, tradeid:int, price:float, inst:str):
+    def set_stoploss(self, tradeid: int, price: float, inst: str):
         if not self.check_before_stopmove(tradeid, price):
             print('Pre stop move check fails:', tradeid, price)
             return
-        
+
         prec = cfg.instruments[inst]['displayPrecision']
         sl = dict(
             price=f'{price:.{prec}f}',
@@ -230,5 +239,6 @@ class Trader():
 
 
 if __name__ == '__main__':
-    t = Trader()
-    t.check_instruments()
+    print('hi')
+    # t = Trader()
+    # t.check_instruments()
