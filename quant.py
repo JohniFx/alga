@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import json
 import cfg
+import pprint
 
 __version__ = '2022-01-24'
 
@@ -35,12 +36,12 @@ class Quant():
         # print('data files updated:', tf, count)
 
     def update_kpi_file(self):
-        with open('kpi_data.json', 'w') as write_file:
-            json.dump(self.get_kpi_data(), write_file, indent=2)
-
-    def get_kpi_data(self, tf='M5'):
+        kpi_data = []
         for inst in cfg.tradeable_instruments:
-            yield self.get_kpi_dict(inst=inst, tf=tf)
+            kpi_data.append(self.get_kpi_dict(inst=inst, tf='M5'))
+
+        with open('kpi_data.json', 'w') as write_file:
+            json.dump(kpi_data, write_file, indent=2)
 
     def get_linreg(self, df):
         x = np.arange(len(df))
@@ -209,11 +210,14 @@ class Quant():
             lrg=df.lr_slope.iloc[-1],
             sto=df.STO_K.iloc[-1].round(2)
         )
-        if (s1 != 0) or (s2 != 0) or (s3 != 0) or (s4 != 0):
-            print(signals)
         signal = dict(
-            signal=s3,
+            inst=inst,
+            tf=tf,
+            count=count,
+            signals=signals,
             signaltype='S3',
+            low=df.bid_l.iloc[-1],
+            high=df.ask_h.iloc[-1],
             stop_level=1,
             stop_dist=1,
             target_level=1,
@@ -221,6 +225,11 @@ class Quant():
             risk_reward_ratio=1,
             probability=1
         )
+        if (s1 != 0) or (s2 != 0) or (s3 != 0) or (s4 != 0):
+            pp = pprint.PrettyPrinter(indent=4)
+            print(signals)
+            print('')
+            pp.pprint(signal)
         if (s1 == s2) and (s2 == s3) and (s3 == s4):
             return s1, 'XL'
 
