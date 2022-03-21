@@ -186,11 +186,11 @@ class Quant():
         s2 = df.s2.iloc[-1]
 
         # Strategy3
-        sc1 = (df.STO_K > 86) & (df.lr_slope > 0)
-        sc2 = (df.STO_K < 14) & (df.lr_slope < 0)
-        df['s3'] = np.where(sc1, -1, 0)
-        df['s3'] = np.where(sc2, 1, df['s3'])
-        s3 = df.s3.iloc[-1]
+        #sc1 = (df.STO_K > 86) & (df.lr_slope > 0)
+        #sc2 = (df.STO_K < 14) & (df.lr_slope < 0)
+        #df['s3'] = np.where(sc1, -1, 0)
+        #df['s3'] = np.where(sc2, 1, df['s3'])
+        s3 = 0  # df.s3.iloc[-1]
 
         # Strategy4
         cd1 = (df.hilo > 0) & (df.mom_pos < 0) & (
@@ -202,20 +202,17 @@ class Quant():
         s4 = df.s4.iloc[-1]
 
         signals = dict(
-            inst=inst,
             s1=s1,
             s2=s2,
             s3=s3,
             s4=s4,
-            lrg=df.lr_slope.iloc[-1],
-            sto=df.STO_K.iloc[-1].round(2)
+            lrg=df.lr_slope.iloc[-1]
         )
         signal = dict(
             inst=inst,
             tf=tf,
             count=count,
             signals=signals,
-            signaltype='S3',
             low=df.bid_l.iloc[-1],
             high=df.ask_h.iloc[-1],
             stop_level=1,

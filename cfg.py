@@ -3,7 +3,6 @@ from v20.account import AccountChanges
 import threading
 import time
 import configparser
-import utils as u
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -52,7 +51,7 @@ global_params = dict(
     sl=12,
     ts=15,
     max_spread=3,
-    be_pips=11,
+    be_pips=10,
     be_sl=1)
 
 
@@ -97,7 +96,8 @@ def run_price_stream():
             instruments[data.instrument]['bid'] = data.bids[0].price
             instruments[data.instrument]['ask'] = data.asks[0].price
             instruments[data.instrument]['spread'] = round(
-                data.asks[0].price-data.bids[0].price, instruments[data.instrument]['displayPrecision'])
+                data.asks[0].price-data.bids[0].price,
+                instruments[data.instrument]['displayPrecision'])
 
 
 def run_transaction_stream():
@@ -157,8 +157,6 @@ def update_orders(account, state):
 def apply_changes(account, changes: AccountChanges):
     for to in changes.tradesOpened:
         account.trades.append(to)
-        #new_trade_count += 1
-
     for tr in changes.tradesReduced:
         for t in account.trades:
             if t.id == tr.id:
