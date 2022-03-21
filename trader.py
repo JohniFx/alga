@@ -16,19 +16,30 @@ class Trader():
         self.check_instruments()
 
     def check_instruments(self):
-        for i in cfg.tradeable_instruments:
+        ti = cfg.tradeable_instruments
+        ti.insert(0, ti.pop(ti.index(Trader.get_max_instrument())))
+        for i in ti:
+            # TODO: adding is OK, but to open a new is not OK
             if not Trader.is_trade_allowed():
                 return
             if 'spread' not in cfg.instruments[i]:
                 continue
-
             position = self.get_trades_by_instrument(cfg.account.trades, i)
-
             if len(position) == 0:
                 self.check_instrument(i)
             elif self.check_breakeven_for_position(cfg.account.trades, i):
                 pos = 1 if position[0].currentUnits > 0 else -1
                 self.check_instrument(i, pos)
+
+    @staticmethod
+    def get_max_instrument():
+        pl = 0
+        inst = ''
+        for t in cfg.account.trades:
+            if t.unrealizedPL > pl:
+                pl = t.unrealizedPL
+                inst = t.instrument
+        return inst
 
     def check_breakeven_for_position(self, trades, instrument):
         all_be = []
@@ -53,18 +64,14 @@ class Trader():
 
     def check_trades_for_breakeven(self):
         for t in cfg.account.trades:
-
-            # still in loss
             if t.unrealizedPL <= 0:
                 continue
-
             # already in b/e
             sl = u.get_order_by_id(t.stopLossOrderID)
             cu = t.currentUnits
             if ((cu > 0 and sl.price >= t.price) or
                     (cu < 0 and sl.price <= t.price)):
                 continue
-
             if cu > 0:
                 pip = cfg.instruments[t.instrument]['bid'] - t.price
             elif t.currentUnits < 0:
@@ -73,7 +80,6 @@ class Trader():
                 pow(10, cfg.instruments[t.instrument]['pipLocation'])
             print(f'{u.get_now()} NOBE: #{t.id:>5} {cu:>5.0f}',
                   f' {t.instrument}@{t.price:<8.5f} {pip_pl:>5.2f}')
-
             if pip_pl > cfg.global_params['be_pips']:
                 print(f'{u.get_now()} MOBE: {cu:>5.0f}',
                       f' {t.instrument} {pip_pl:.2f}')
@@ -83,7 +89,6 @@ class Trader():
                     sl_price = t.price + be_sl
                 else:
                     sl_price = t.price - be_sl
-
                 self.set_stoploss(t.id, sl_price, t.instrument)
 
     @ staticmethod
@@ -92,8 +97,8 @@ class Trader():
             if t.unrealizedPL <= 0:
                 print(
                     f'{u.get_now()} RULE: #{t.id:>5}',
-                    f' {t.currentUnits:>5.0f}',
-                    f' {t.instrument} in loss {t.unrealizedPL} wait.')
+                    f'{t.currentUnits:>5.0f}',
+                    f'{t.instrument} in loss {t.unrealizedPL} wait.')
                 return False
         return True
 
@@ -142,12 +147,10 @@ class Trader():
         prec = cfg.instruments[inst]['displayPrecision']
         gp_ts = cfg.global_params['ts']
         tsdist = gp_ts * pow(10, cfg.instruments[inst]['pipLocation'])
-
         sl_on_fill = dict(timeInForce='GTC', price=f'{stopPrice:.{prec}f}')
         tp_on_fill = dict(timeInForce='GTC', price=f'{profitPrice:.{prec}f}')
         ts_on_fill = dict(timeInForce='GTC', distance=f'{tsdist:.{prec}f}')
         ce = dict(id=id, tag='Signal id', comment='Signal id commented')
-
         order = dict(
             type='MARKET',
             instrument=inst,
@@ -157,7 +160,6 @@ class Trader():
             stopLossOnFill=sl_on_fill,
             trailingStopLossOnFill=ts_on_fill
         )
-
         response = cfg.ctx.order.market(cfg.ACCOUNT_ID, **order)
         id = response.get('orderFillTransaction').id
         return id
@@ -166,7 +168,6 @@ class Trader():
         prec = cfg.instruments[inst]['displayPrecision']
         ts_dist = cfg.global_params['ts'] * \
             cfg.instruments[inst]['pipLocation']
-
         sl_on_fill = dict(timeInForce='GTC', price=f'{stopPrice:.{prec}f}')
         tp_on_fill = dict(timeInForce='GTC', price=f'{profitPrice:.{prec}f}')
         ts_on_fill = dict(timeInForce='GTC', distance=f'{ts_dist:.{prec}f}')
@@ -224,7 +225,6 @@ class Trader():
         if not self.check_before_stopmove(tradeid, price):
             print('Pre stop move check fails:', tradeid, price)
             return
-
         prec = cfg.instruments[inst]['displayPrecision']
         sl = dict(
             price=f'{price:.{prec}f}',

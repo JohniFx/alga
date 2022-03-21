@@ -101,7 +101,7 @@ class Main():
         pp.pprint(self.stats)
 
     def restart(self):
-        time.sleep(45*60)
+        time.sleep(30*60)
         import os
         import sys
         print(f'\n{u.get_now()} RSTR')
