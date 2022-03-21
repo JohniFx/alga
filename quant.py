@@ -227,7 +227,6 @@ class Quant():
         )
         if (s1 != 0) or (s2 != 0) or (s3 != 0) or (s4 != 0):
             pp = pprint.PrettyPrinter(indent=4)
-            print(signals)
             print('')
             pp.pprint(signal)
         if (s1 == s2) and (s2 == s3) and (s3 == s4):
