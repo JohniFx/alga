@@ -114,9 +114,13 @@ def run_price_stream():
 def run_transaction_stream():
     print('start transaction stream')
     response = ctxs.transaction.stream(ACCOUNT_ID)
-    for t, d in response.parts():
-        if d.type != "HEARTBEAT":
-            notify_transaction_observers(d)
+    try:
+        for t, d in response.parts():
+            if d.type != "HEARTBEAT":
+                notify_transaction_observers(d)
+    except Exception as e:
+        print('Transaction stream crashed. initiate restart')
+        print(e)
 
 
 def run_account_update(account, lastTransactionID):

@@ -77,7 +77,8 @@ class Trader():
             sl = u.get_order_by_id(t.stopLossOrderID)
             cu = t.currentUnits
             if self.is_be(cu, sl.price, t.price):
-                print(f'{t.id} already be {t.instrument} {t.price} {t.unrealizedPL}')
+                print(
+                    f'{t.id} already be {t.instrument}@{t.price} pl:{t.unrealizedPL}')
                 continue
 
             if cu > 0:
