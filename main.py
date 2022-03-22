@@ -104,8 +104,7 @@ class Main():
         time.sleep(30*60)
         import os
         import sys
-        print(f'\n{u.get_now()} RSTR')
-        # TODO: save variables into file
+        print(f'\n{u.get_now()} ')
         os.execv('./main.py', sys.argv)
 
 
