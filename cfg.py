@@ -59,6 +59,7 @@ global_params = dict(
 
 def create_stats() -> dict:
     stats = dict(
+        created=datetime.now(),
         count_sl=0,
         count_ts=0,
         count_tp=0,
@@ -69,10 +70,11 @@ def create_stats() -> dict:
 
     if datetime.now().hour != 7:
         try:
-            with open('stats.json', 'a') as f:
+            with open('stats.json', 'r') as f:
                 stats = json.load(f)
         except OSError as e:
             print('no stats yet', e)
+    print('stats:', stats)
     return stats
 
 

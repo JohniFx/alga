@@ -77,8 +77,8 @@ class Main():
         # print('on account changes')
         if datetime.now().minute % 15 == 0:
             msg = f"{datetime.now().strftime('%H:%M:%S')}"
-            msg += f" {float(cfg.account.NAV):>7.2f}"
-            msg += f" {float(cfg.account.unrealizedPL):>7.2f}"
+            msg += f" nav:{float(cfg.account.NAV):>7.2f}"
+            msg += f" upl:{float(cfg.account.unrealizedPL):>7.2f}"
             msg += f" t:{cfg.account.openTradeCount}"
             msg += f" o:{cfg.account.pendingOrderCount}"
             msg += f" p:{cfg.account.openPositionCount}"
