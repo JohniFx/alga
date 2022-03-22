@@ -61,6 +61,14 @@ class Trader():
                 inst_trades.append(t)
         return inst_trades
 
+    def is_be(self, units, sl, entry):
+        c1 = units > 0 and sl >= entry
+        c2 = units < 0 and sl <= entry
+        return True if c1 or c2 else False
+
+    def get_piploc(self, inst):
+        return cfg.instruments[inst]['pipLocation']
+
     def check_trades_for_breakeven(self):
         for t in cfg.account.trades:
             if t.unrealizedPL <= 0:
@@ -68,22 +76,23 @@ class Trader():
             # already in b/e
             sl = u.get_order_by_id(t.stopLossOrderID)
             cu = t.currentUnits
-            if ((cu > 0 and sl.price >= t.price) or
-                    (cu < 0 and sl.price <= t.price)):
+            if self.is_be(cu, sl.price, t.price):
+                print(f'{t.id} already be {t.instrument} {t.price} {t.unrealizedPL}')
                 continue
+
             if cu > 0:
                 pip = cfg.instruments[t.instrument]['bid'] - t.price
-            elif t.currentUnits < 0:
+            if cu < 0:
                 pip = t.price - cfg.instruments[t.instrument]['ask']
-            pip_pl = pip / \
-                pow(10, cfg.instruments[t.instrument]['pipLocation'])
+
+            pip_pl = pip / pow(10, self.get_piploc(t.instrument))
             print(f'{u.get_now()} NOBE: #{t.id:>5} {cu:>5.0f}',
                   f' {t.instrument}@{t.price:<8.5f} {pip_pl:>5.2f}')
             if pip_pl > cfg.global_params['be_pips']:
                 print(f'{u.get_now()} MOBE: {cu:>5.0f}',
                       f' {t.instrument} {pip_pl:.2f}')
-                be_sl = cfg.global_params['be_sl'] *\
-                    pow(10, cfg.instruments[t.instrument]['pipLocation'])
+                be_sl = cfg.global_params['be_sl'] * \
+                    pow(10, self.get_piploc(t.instrument))
                 if t.currentUnits > 0:
                     sl_price = t.price + be_sl
                 else:
