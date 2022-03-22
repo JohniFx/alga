@@ -123,6 +123,10 @@ def run_transaction_stream():
         print(e)
 
 
+def get_piploc(inst):
+    return instruments[inst]['pipLocation']
+
+
 def run_account_update(account, lastTransactionID):
     print('start account polling')
     _lastId = lastTransactionID

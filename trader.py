@@ -50,8 +50,6 @@ class Trader():
                             (t.currentUnits > 0 and o.price >= t.price)
                             or
                             (t.currentUnits < 0 and o.price <= t.price))
-        if all(all_be):
-            print(f'{u.get_now()} CBFP', instrument, all(all_be))
         return all(all_be)
 
     def get_trades_by_instrument(self, trades, instrument):
@@ -66,9 +64,6 @@ class Trader():
         c2 = units < 0 and sl <= entry
         return True if c1 or c2 else False
 
-    def get_piploc(self, inst):
-        return cfg.instruments[inst]['pipLocation']
-
     def check_trades_for_breakeven(self):
         for t in cfg.account.trades:
             if t.unrealizedPL <= 0:
@@ -77,8 +72,6 @@ class Trader():
             sl = u.get_order_by_id(t.stopLossOrderID)
             cu = t.currentUnits
             if self.is_be(cu, sl.price, t.price):
-                print(
-                    f'{t.id} already be {t.instrument}@{t.price} pl:{t.unrealizedPL}')
                 continue
 
             if cu > 0:
@@ -86,14 +79,14 @@ class Trader():
             if cu < 0:
                 pip = t.price - cfg.instruments[t.instrument]['ask']
 
-            pip_pl = pip / pow(10, self.get_piploc(t.instrument))
-            print(f'{u.get_now()} NOBE: #{t.id:>5} {cu:>5.0f}',
-                  f' {t.instrument}@{t.price:<8.5f} {pip_pl:>5.2f}')
+            pip_pl = pip / pow(10, cfg.get_piploc(t.instrument))
+            # print(f'{u.get_now()} NOBE: #{t.id:>5} {cu:>5.0f}',
+            #      f' {t.instrument}@{t.price:<8.5f} {pip_pl:>5.2f}')
             if pip_pl > cfg.global_params['be_pips']:
                 print(f'{u.get_now()} MOBE: {cu:>5.0f}',
                       f' {t.instrument} {pip_pl:.2f}')
                 be_sl = cfg.global_params['be_sl'] * \
-                    pow(10, self.get_piploc(t.instrument))
+                    pow(10, cfg.get_piploc(t.instrument))
                 if t.currentUnits > 0:
                     sl_price = t.price + be_sl
                 else:
@@ -128,8 +121,7 @@ class Trader():
         ask = cfg.instruments[inst]['ask']
         bid = cfg.instruments[inst]['bid']
         spread = cfg.instruments[inst]['spread']
-        # print(f"piplocation: {inst} {cfg.instruments[inst]['pipLocation']}")
-        piploc = pow(10, cfg.instruments[inst]['pipLocation'])
+        piploc = pow(10, cfg.get_piploc(inst))
 
         spread_piploc = spread / piploc
         # print(f'{u.get_now()} SPRD: {inst} {spread} {spread_piploc:.1f}')
@@ -155,7 +147,7 @@ class Trader():
     def place_market(self, inst, units, stopPrice, profitPrice=None, id='0'):
         prec = cfg.instruments[inst]['displayPrecision']
         gp_ts = cfg.global_params['ts']
-        tsdist = gp_ts * pow(10, cfg.instruments[inst]['pipLocation'])
+        tsdist = gp_ts * pow(10, cfg.get_piploc(inst))
         sl_on_fill = dict(timeInForce='GTC', price=f'{stopPrice:.{prec}f}')
         tp_on_fill = dict(timeInForce='GTC', price=f'{profitPrice:.{prec}f}')
         ts_on_fill = dict(timeInForce='GTC', distance=f'{tsdist:.{prec}f}')
@@ -175,8 +167,7 @@ class Trader():
 
     def place_limit(self, inst, units, entryPrice, stopPrice, profitPrice):
         prec = cfg.instruments[inst]['displayPrecision']
-        ts_dist = cfg.global_params['ts'] * \
-            cfg.instruments[inst]['pipLocation']
+        ts_dist = cfg.global_params['ts'] * cfg.get_piploc(inst)
         sl_on_fill = dict(timeInForce='GTC', price=f'{stopPrice:.{prec}f}')
         tp_on_fill = dict(timeInForce='GTC', price=f'{profitPrice:.{prec}f}')
         ts_on_fill = dict(timeInForce='GTC', distance=f'{ts_dist:.{prec}f}')
