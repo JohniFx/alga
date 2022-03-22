@@ -3,6 +3,8 @@ from v20.account import AccountChanges
 import threading
 import time
 import configparser
+import json
+from datetime import datetime
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -64,6 +66,13 @@ def create_stats() -> dict:
         sum_ts=0,
         sum_tp=0
     )
+
+    if datetime.now().hour != 7:
+        try:
+            with open('stats.json', 'a') as f:
+                stats = json.load(f)
+        except OSError as e:
+            print('no stats yet', e)
     return stats
 
 

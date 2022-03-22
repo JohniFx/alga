@@ -18,10 +18,8 @@ class Main():
         cfg.price_observers.append(self)
         cfg.transaction_observers.append(self)
         cfg.account_observers.append(self)
-        time.sleep(5)
-
         self.stats = cfg.create_stats()
-
+        time.sleep(5)
         threading.Thread(target=self.update_kpi).start()
         threading.Thread(target=Main.run_check_instruments).start()
 
@@ -100,7 +98,7 @@ class Main():
         else:
             return
         pp.pprint(self.stats)
-        with open('stats.json', w) as f:
+        with open('stats.json', 'w') as f:
             json.dump(self.stats, f, indent=2)
 
     def restart(self):
