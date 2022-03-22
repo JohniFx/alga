@@ -19,9 +19,6 @@ class Trader():
         ti = cfg.tradeable_instruments
         ti.insert(0, ti.pop(ti.index(Trader.get_max_instrument())))
         for i in ti:
-            # TODO: adding is OK, but to open a new is not OK
-            if not Trader.is_trade_allowed():
-                return
             if 'spread' not in cfg.instruments[i]:
                 continue
             position = self.get_trades_by_instrument(cfg.account.trades, i)
@@ -30,6 +27,8 @@ class Trader():
             elif self.check_breakeven_for_position(cfg.account.trades, i):
                 pos = 1 if position[0].currentUnits > 0 else -1
                 self.check_instrument(i, pos)
+            if not Trader.is_trade_allowed():
+                return
 
     @staticmethod
     def get_max_instrument():

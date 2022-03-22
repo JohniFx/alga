@@ -8,6 +8,7 @@ import time
 from datetime import datetime
 import pprint
 import utils as u
+import json
 __version__ = '2022-03-16'
 
 
@@ -79,7 +80,7 @@ class Main():
         if datetime.now().minute % 15 == 0:
             msg = f"{datetime.now().strftime('%H:%M:%S')}"
             msg += f" {float(cfg.account.NAV):>7.2f}"
-            msg += f" {float(cfg.account.unrealizedPL):>8.4f}"
+            msg += f" {float(cfg.account.unrealizedPL):>7.2f}"
             msg += f" t:{cfg.account.openTradeCount}"
             msg += f" o:{cfg.account.pendingOrderCount}"
             msg += f" p:{cfg.account.openPositionCount}"
@@ -99,6 +100,8 @@ class Main():
         else:
             return
         pp.pprint(self.stats)
+        with open('stats.json', w) as f:
+            json.dump(self.stats, f, indent=2)
 
     def restart(self):
         time.sleep(30*60)

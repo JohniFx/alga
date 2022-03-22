@@ -186,10 +186,10 @@ class Quant():
         s2 = df.s2.iloc[-1]
 
         # Strategy3
-        #sc1 = (df.STO_K > 86) & (df.lr_slope > 0)
-        #sc2 = (df.STO_K < 14) & (df.lr_slope < 0)
-        #df['s3'] = np.where(sc1, -1, 0)
-        #df['s3'] = np.where(sc2, 1, df['s3'])
+        # sc1 = (df.STO_K > 86) & (df.lr_slope > 0)
+        # sc2 = (df.STO_K < 14) & (df.lr_slope < 0)
+        # df['s3'] = np.where(sc1, -1, 0)
+        # df['s3'] = np.where(sc2, 1, df['s3'])
         s3 = 0  # df.s3.iloc[-1]
 
         # Strategy4
