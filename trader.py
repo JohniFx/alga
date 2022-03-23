@@ -64,6 +64,7 @@ class Trader():
         return True if c1 or c2 else False
 
     def check_trades_for_breakeven(self):
+        cfg.account.trades.sort(key=lambda x: x.unrealizedPL, reverse=True)
         for t in cfg.account.trades:
             if t.unrealizedPL <= 0:
                 continue
@@ -80,7 +81,7 @@ class Trader():
 
             pip_pl = pip / pow(10, cfg.get_piploc(t.instrument))
             print(f'{u.get_now()} NOBE: #{t.id:>5} {cu:>5.0f}',
-                 f' {t.instrument}@{t.price:<8.5f} {pip_pl:>5.2f}')
+                  f' {t.instrument}@{t.price:<10.5f} {pip_pl:>5.2f}')
             if pip_pl > cfg.global_params['be_pips']:
                 print(f'{u.get_now()} MOBE: {cu:>5.0f}',
                       f' {t.instrument} {pip_pl:.2f}')
@@ -203,7 +204,12 @@ class Trader():
             cfg.ctx.trade.close(cfg.ACCOUNT_ID, trade.id, units=str(units))
 
     def initial_tradecheck(self):
+        # TODO: ha uj instrumentum van akkor azt vegye be streambe
+
         for t in cfg.account.trades:
+            if t.instrument not in cfg.tradeable_instruments:
+                print(f'{t.instrument} not in tradeables, stream')
+
             if t.stopLossOrderID is None:
                 if t.unrealizedPL >= 0:
                     self.set_stoploss(t.id, t.price, t.instrument)

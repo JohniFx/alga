@@ -41,22 +41,23 @@ tradeable_instruments = [
     'GBP_USD', 'GBP_CAD', 'GBP_NZD', 'GBP_CHF', 'GBP_JPY', 'GBP_AUD',
     'AUD_USD', 'AUD_CAD', 'AUD_NZD', 'AUD_CHF', 'AUD_JPY',
     'NZD_USD', 'NZD_CAD', 'NZD_JPY']
-tradeinsts = ','.join(tradeable_instruments)
+
 
 def resort_instruments():
     ti = tradeable_instruments
-    if len(account.positions) ==0:
+    if len(account.positions) == 0:
         return tradeable_instruments
-    trade_dict=[]
+    trade_dict = []
     for t in account.positions:
         trade_dict.append(t.dict())
-    i =0 
+    i = 0
     for n in sorted(trade_dict, key=lambda d: d['unrealizedPL']):
         if 'marginUsed' in n.keys():
-            i+=1
+            i += 1
             ti.insert(0, ti.pop(ti.index(n['instrument'])))
-    print(ti[:i])
-    return ti 
+    print(ti[:5])
+    return ti
+
 
 # observers
 price_observers = []
@@ -108,8 +109,9 @@ def notify_account_observers():
         o.on_account_changes()
 
 
-def run_price_stream():
+def run_price_stream(tradeable_instruments: list):
     print('start price stream')
+    tradeinsts = ','.join(tradeable_instruments)
     response = ctxs.pricing.stream(ACCOUNT_ID, instruments=tradeinsts)
     for typ, data in response.parts():
         if typ == "pricing.ClientPrice":
@@ -209,9 +211,6 @@ def apply_changes(account, changes: AccountChanges):
                 account.positions.remove(ap)
                 account.positions.append(cp)
                 ap.unrealizedPL = 0.0
-                
-
-            
 
     for occ in changes.ordersCancelled:
         for o in account.orders:
@@ -265,7 +264,11 @@ def update_account(account, changes, state):
     update_orders(account, state)
 
 
-threading.Thread(target=run_price_stream).start()
-threading.Thread(target=run_transaction_stream).start()
+thread_price_stream = threading.Thread(target=run_price_stream,
+                                       args=[tradeable_instruments, ])
+thread_price_stream.start()
+
+thread_transactions = threading.Thread(target=run_transaction_stream)
+thread_transactions.start()
 threading.Thread(target=run_account_update, args=[
                  account, lastTransactionID]).start()
