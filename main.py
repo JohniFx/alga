@@ -1,4 +1,6 @@
 #!/usr/bin/python3
+import os
+import sys
 
 import cfg
 import trader
@@ -102,11 +104,10 @@ class Main():
             json.dump(self.stats, f, indent=2)
 
     def restart(self):
-        time.sleep(30*60)
-        import os
-        import sys
-        print(f'\n{u.get_now()} ')
-        os.execv('./main.py', sys.argv)
+        time.sleep(60)
+        if datetime.now().minute % 30 == 0:
+            print(f'\n{u.get_now()} RESTART')
+            os.execv('./main.py', sys.argv)
 
 
 if __name__ == '__main__':
