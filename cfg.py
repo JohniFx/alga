@@ -45,13 +45,17 @@ tradeinsts = ','.join(tradeable_instruments)
 
 def resort_instruments():
     ti = tradeable_instruments
+    if len(account.positions) ==0:
+        return tradeable_instruments
     trade_dict=[]
     for t in account.positions:
         trade_dict.append(t.dict())
+    i =0 
     for n in sorted(trade_dict, key=lambda d: d['unrealizedPL']):
         if 'marginUsed' in n.keys():
+            i+=1
             ti.insert(0, ti.pop(ti.index(n['instrument'])))
-    print(ti[:7])
+    print(ti[:i])
     return ti 
 
 # observers
@@ -199,17 +203,15 @@ def apply_changes(account, changes: AccountChanges):
             if t.id == tc.id:
                 account.trades.remove(t)
 
-    for p in changes.positions:
+    for cp in changes.positions:
         for ap in account.positions:
-            if p.instrument == ap.instrument:
-                print('')
-                print('position change:')
-                print('remove')
-                print(ap)
+            if ap.instrument == cp.instrument:
                 account.positions.remove(ap)
-                print('append:')
-                print(p)
-                account.positions.append(p)
+                account.positions.append(cp)
+                ap.unrealizedPL = 0.0
+                
+
+            
 
     for occ in changes.ordersCancelled:
         for o in account.orders:

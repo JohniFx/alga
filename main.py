@@ -77,7 +77,7 @@ class Main():
             'MARKET_ORDER_POSITION_CLOSEOUT']
 
         if data.reason in reasons_detailed:
-            msg += f" {data.units} PL:{data.pl}, cost:{data.halfSpreadCost}"
+            msg += f" {data.units:.0f} PL:{data.pl}, cost:{data.halfSpreadCost}"
         print(msg)
 
     def on_account_changes(self):
