@@ -43,6 +43,17 @@ tradeable_instruments = [
     'NZD_USD', 'NZD_CAD', 'NZD_JPY']
 tradeinsts = ','.join(tradeable_instruments)
 
+def resort_instruments():
+    ti = tradeable_instruments
+    trade_dict=[]
+    for t in account.positions:
+        trade_dict.append(t.dict())
+    for n in sorted(trade_dict, key=lambda d: d['unrealizedPL']):
+        if 'marginUsed' in n.keys():
+            ti.insert(0, ti.pop(ti.index(n['instrument'])))
+    print(ti[:7])
+    return ti 
+
 # observers
 price_observers = []
 transaction_observers = []
@@ -191,7 +202,13 @@ def apply_changes(account, changes: AccountChanges):
     for p in changes.positions:
         for ap in account.positions:
             if p.instrument == ap.instrument:
+                print('')
+                print('position change:')
+                print('remove')
+                print(ap)
                 account.positions.remove(ap)
+                print('append:')
+                print(p)
                 account.positions.append(p)
 
     for occ in changes.ordersCancelled:

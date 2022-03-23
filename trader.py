@@ -15,9 +15,9 @@ class Trader():
         self.check_instruments()
 
     def check_instruments(self):
-        ti = cfg.tradeable_instruments
-        ti.insert(0, ti.pop(ti.index(Trader.get_max_instrument())))
-        for i in ti:
+        #ti = cfg.tradeable_instruments
+        #ti.insert(0, ti.pop(ti.index(Trader.get_max_instrument())))
+        for i in cfg.resort_instruments():
             if 'spread' not in cfg.instruments[i]:
                 continue
             position = self.get_trades_by_instrument(cfg.account.trades, i)
