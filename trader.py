@@ -33,7 +33,7 @@ class Trader():
     @staticmethod
     def get_max_instrument():
         pl = 0
-        inst = ''
+        inst = 'EUR_USD'
         for t in cfg.account.trades:
             if t.unrealizedPL > pl:
                 pl = t.unrealizedPL
