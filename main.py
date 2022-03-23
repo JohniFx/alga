@@ -16,14 +16,14 @@ __version__ = '2022-03-16'
 
 class Main():
     def __init__(self) -> None:
-        threading.Thread(target=self.restart).start()
+        #threading.Thread(target=self.restart).start()
         cfg.price_observers.append(self)
         cfg.transaction_observers.append(self)
         cfg.account_observers.append(self)
         self.stats = cfg.create_stats()
         time.sleep(5)
         threading.Thread(target=self.update_kpi).start()
-        threading.Thread(target=Main.run_check_instruments).start()
+        threading.Thread(target=self.run_check_instruments).start()
 
     def update_kpi(self):
         while True:
@@ -33,13 +33,18 @@ class Main():
             q.update_kpi_file()
             time.sleep(60*30)
 
-    @staticmethod
-    def run_check_instruments(n=120):
-        while True:
+    def run_check_instruments(self, n=120):
+        for i in range(10):
+            print(f'\n{u.get_now()} ITER: {i}')
             t = trader.Trader()
             threading.Thread(target=t.do_trading).start()
             time.sleep(n)
+        self.restart()
 
+    def restart(self):
+        print(f'\n{u.get_now()} RESTART')
+        os.execv('./main.py', sys.argv)
+        
     def on_tick(self, cp):
         # margin calculation
         pass
@@ -103,11 +108,6 @@ class Main():
         with open('stats.json', 'w') as f:
             json.dump(self.stats, f, indent=2)
 
-    def restart(self):
-        time.sleep(60)
-        if datetime.now().minute % 30 == 0:
-            print(f'\n{u.get_now()} RESTART')
-            os.execv('./main.py', sys.argv)
 
 
 if __name__ == '__main__':

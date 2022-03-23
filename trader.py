@@ -10,7 +10,6 @@ class Trader():
         self.initial_tradecheck()
 
     def do_trading(self):
-        print('')
         self.initial_tradecheck()
         self.check_trades_for_breakeven()
         self.check_instruments()
@@ -80,8 +79,8 @@ class Trader():
                 pip = t.price - cfg.instruments[t.instrument]['ask']
 
             pip_pl = pip / pow(10, cfg.get_piploc(t.instrument))
-            # print(f'{u.get_now()} NOBE: #{t.id:>5} {cu:>5.0f}',
-            #      f' {t.instrument}@{t.price:<8.5f} {pip_pl:>5.2f}')
+            print(f'{u.get_now()} NOBE: #{t.id:>5} {cu:>5.0f}',
+                 f' {t.instrument}@{t.price:<8.5f} {pip_pl:>5.2f}')
             if pip_pl > cfg.global_params['be_pips']:
                 print(f'{u.get_now()} MOBE: {cu:>5.0f}',
                       f' {t.instrument} {pip_pl:.2f}')
