@@ -1,14 +1,13 @@
 #!/usr/bin/python3
 import os
 import sys
-
+import v20
 import cfg
 import trader
 import quant
 import threading
 import time
 from datetime import datetime
-import pprint
 import utils as u
 import json
 __version__ = '2022-03-16'
@@ -19,8 +18,9 @@ class Main():
         cfg.price_observers.append(self)
         cfg.transaction_observers.append(self)
         cfg.account_observers.append(self)
-        self.stats = cfg.create_stats()
         time.sleep(5)
+        self.stats = cfg.create_stats()
+        self.print_account(cfg.account)
         threading.Thread(target=self.update_kpi).start()
         threading.Thread(target=self.run_check_instruments).start()
 
@@ -84,18 +84,17 @@ class Main():
         if datetime.now().minute % 5 == 0:
             self.print_account(cfg.account)
 
-    def print_account(self, ac):
-        if datetime.now().minute % 15 == 0:
-            msg = f"{datetime.now().strftime('%H:%M:%S')}"
-            msg += f" nav:{float(ac.NAV):>7.2f}"
-            msg += f" pl:{float(ac.unrealizedPL):>6.2f}"
-            msg += f" t:{ac.openTradeCount}"
-            msg += f" o:{ac.pendingOrderCount}"
-            msg += f" p:{ac.openPositionCount}"
-            print(msg)
+    def print_account(self, ac: v20.account.Account):
+        # if datetime.now().minute % 15 == 0:
+        msg = f"{u.get_now()}"
+        msg += f" nav:{float(ac.NAV):>7.2f}"
+        msg += f" pl:{float(ac.unrealizedPL):>6.2f}"
+        msg += f" t:{ac.openTradeCount}"
+        msg += f" o:{ac.pendingOrderCount}"
+        msg += f" p:{ac.openPositionCount}"
+        print(msg)
 
     def update_stats(self, data):
-        pp = pprint.PrettyPrinter(indent=4)
         if data.reason == 'TAKE_PROFIT_ORDER':
             self.stats['count_tp'] += 1
             self.stats['sum_tp'] += data.pl
@@ -110,7 +109,7 @@ class Main():
             self.stats['sum_manual'] += data.pl
         else:
             return
-        pp.pprint(self.stats)
+        cfg.print_stats(self.stats)
         with open('stats.json', 'w') as f:
             json.dump(self.stats, f, indent=2)
 

@@ -91,10 +91,14 @@ def create_stats() -> dict:
             print('no stats yet', e)
         except json.decoder.JSONDecodeError as e:
             print('json file hiba', e, )
+        print_stats(stats)
+    return stats
+
+
+def print_stats(stats):
     print(f" sl: {stats['count_sl']}/{stats['sum_sl']:.2f}",
           f" ts: {stats['count_ts']}/{stats['sum_ts']:.2f}",
           f" tp: {stats['count_tp']}/{stats['sum_tp']:.2f}")
-    return stats
 
 
 def notify_price_observers(cp):
