@@ -16,7 +16,6 @@ __version__ = '2022-03-16'
 
 class Main():
     def __init__(self) -> None:
-        #threading.Thread(target=self.restart).start()
         cfg.price_observers.append(self)
         cfg.transaction_observers.append(self)
         cfg.account_observers.append(self)
@@ -38,15 +37,17 @@ class Main():
             print(f'\n{u.get_now()} ITER: {i}')
             t = trader.Trader()
             threading.Thread(target=t.do_trading).start()
+            hour = datetime.now().hour
+            if hour >= 22 or hour <= 7:
+                n = 60 * 5
             time.sleep(n)
         self.restart()
 
     def restart(self):
         print(f'\n{u.get_now()} RESTART')
         os.execv('./main.py', sys.argv)
-        
+
     def on_tick(self, cp):
-        # margin calculation
         pass
 
     def on_data(self, data):
@@ -102,12 +103,14 @@ class Main():
         elif data.reason == 'TRAILING_STOP_LOSS_ORDER':
             self.stats['count_ts'] += 1
             self.stats['sum_ts'] += data.pl
+        elif data.reason == 'MARKET_ORDER_TRADE_CLOSE':
+            self.stats['count_manual'] += 1
+            self.stats['sum_manual'] += data.pl
         else:
             return
         pp.pprint(self.stats)
         with open('stats.json', 'w') as f:
             json.dump(self.stats, f, indent=2)
-
 
 
 if __name__ == '__main__':

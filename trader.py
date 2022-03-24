@@ -205,7 +205,6 @@ class Trader():
 
     def initial_tradecheck(self):
         # TODO: ha uj instrumentum van akkor azt vegye be streambe
-
         for t in cfg.account.trades:
             if t.instrument not in cfg.tradeable_instruments:
                 print(f'{t.instrument} not in tradeables, stream')
