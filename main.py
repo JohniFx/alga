@@ -44,6 +44,9 @@ class Main():
 
     def on_data(self, data):
         self.update_stats(data)
+        if data.type == 'DAILY_FINANCING':
+            print(data)
+            return
 
         if data.type == 'STOP_LOSS_ORDER_REJECT':
             print(data)

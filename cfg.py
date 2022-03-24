@@ -82,7 +82,9 @@ def create_stats() -> dict:
         count_tp=0,
         sum_sl=0,
         sum_ts=0,
-        sum_tp=0
+        sum_tp=0,
+        count_manual=0,
+        sum_manual=0
     )
     if datetime.now().hour != 7:
         try:
@@ -119,7 +121,7 @@ def notify_account_observers():
 
 def run_price_stream(tradeable_instruments: list):
     print('start price stream')
-    tradeinsts = ','.join(tradeable_instruments)
+    tradeinsts = ','.join(tradeable_instruments[:20])
     response = ctxs.pricing.stream(ACCOUNT_ID, instruments=tradeinsts)
     try:
         for typ, data in response.parts():

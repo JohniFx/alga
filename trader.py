@@ -3,6 +3,7 @@ import utils as u
 import quant
 import threading
 import datetime
+import v20
 
 
 class Trader():
@@ -11,15 +12,13 @@ class Trader():
 
     def do_trading(self):
         self.initial_tradecheck()
+        cfg.account.trades.sort(key=lambda x: x.unrealizedPL, reverse=True)
         self.check_trades_for_breakeven()
         self.check_instruments()
         cfg.print_account()
 
     def initial_tradecheck(self):
-        # TODO: ha uj instrumentum van akkor azt vegye be streambe
         for t in cfg.account.trades:
-            if t.instrument not in cfg.tradeable_instruments:
-                print(f'{t.instrument} not in tradeables, stream')
             if t.stopLossOrderID is None:
                 if t.unrealizedPL >= 0:
                     self.set_stoploss(t.id, t.price, t.instrument)
@@ -28,17 +27,14 @@ class Trader():
                     self.close_trade(t)
 
     def check_trades_for_breakeven(self):
-        cfg.account.trades.sort(key=lambda x: x.unrealizedPL, reverse=True)
         for t in cfg.account.trades:
-            # still in loss
-            if t.unrealizedPL <= 0:
+            try:
+                self.get_distance_from_sl(t)
+            except Exception as e:
+                print(t.instrument, e)
+            if t.unrealizedPL <= 0 or self.is_be(t, u.get_order_by_id(t.stopLossOrderID)):
                 continue
             pip_pl = self.get_pip_pl(t.instrument, t.currentUnits, t.price)
-            # already in b/e
-            sl = u.get_order_by_id(t.stopLossOrderID)
-            if self.is_be(t.currentUnits, sl.price, t.price):
-                #self.print_trade(t, 'TABE', pip_pl)
-                continue
             # Move to be
             if pip_pl > cfg.global_params['be_pips']:
                 self.print_trade(t, 'MOBE', pip_pl)
@@ -51,6 +47,26 @@ class Trader():
                 self.set_stoploss(t.id, sl_price, t.instrument)
             else:
                 self.print_trade(t, 'NOBE', pip_pl)
+
+    def get_distance_from_sl(self, trade: v20.trade):
+        sl = u.get_order_by_id(trade.stopLossOrderID)
+        bid = cfg.instruments[trade.instrument]['bid']
+        ask = cfg.instruments[trade.instrument]['ask']
+        if trade.currentUnits > 0:
+            dist_from_sl = bid - sl.price
+        if trade.currentUnits < 0:
+            dist_from_sl = sl.price - ask
+        print(f'{u.get_now()} {trade.currentUnits} {trade.instrument}',
+              f'sl: {sl.price} dist from SL:{dist_from_sl:.5f} bid:{bid} ask:{ask}')
+        return dist_from_sl
+
+    def get_distance_from_entry(self, trade):
+        pass
+
+    def is_be(self, t, sl):
+        c1 = t.currentUnits > 0 and sl.price >= t.price
+        c2 = t.currentUnits < 0 and sl.price <= t.price
+        return True if c1 or c2 else False
 
     @staticmethod
     def get_max_instrument():
@@ -93,11 +109,6 @@ class Trader():
             if t.instrument == instrument:
                 inst_trades.append(t)
         return inst_trades
-
-    def is_be(self, units, sl, entry):
-        c1 = units > 0 and sl >= entry
-        c2 = units < 0 and sl <= entry
-        return True if c1 or c2 else False
 
     def print_trade(self, trade, kwrd: str, pip_pl: float):
         print(f'{u.get_now()}',
