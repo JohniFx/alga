@@ -95,10 +95,10 @@ class Trader():
 
     def print_trade(self, trade, kwrd: str, pip_pl: float):
         print(f'{u.get_now()}',
-              f' {kwrd}: #{trade.id:>5}',
-              f' {trade.currentUnits:>5.0f}',
-              f' {trade.instrument}@{trade.price:<10.5f}',
-              f' {pip_pl:>5.2f}')
+              f'{kwrd}: #{trade.id:>5}',
+              f'{trade.currentUnits:>5.0f}',
+              f'{trade.instrument}@{trade.price:<10.5f}',
+              f'{pip_pl:>5.2f}')
 
     def get_pip_pl(self, inst: str, cu: int, price: float) -> float:
         if cu > 0:
