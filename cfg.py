@@ -75,7 +75,7 @@ global_params = dict(
 
 def create_stats() -> dict:
     stats = dict(
-        created=datetime.now(),
+        created=str(datetime.now()),
         count_sl=0,
         count_ts=0,
         count_tp=0,
@@ -83,13 +83,14 @@ def create_stats() -> dict:
         sum_ts=0,
         sum_tp=0
     )
-
     if datetime.now().hour != 7:
         try:
-            with open('stats.json', 'r') as f:
-                stats = json.load(f)
+            f = open('stats.json', 'r')
+            stats = json.load(f)
         except OSError as e:
             print('no stats yet', e)
+        except json.decoder.JSONDecodeError as e:
+            print('json file hiba', e, )
     print('stats:', stats)
     return stats
 
