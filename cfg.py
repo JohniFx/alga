@@ -148,11 +148,12 @@ def run_transaction_stream():
         print(e)
         restart()
 
-    def restart():
-        import os
-        import sys
-        print(f'\n{u.get_now()} RESTART')
-        os.execv('./main.py', sys.argv)
+
+def restart():
+    import os
+    import sys
+    print(f'\n{u.get_now()} RESTART')
+    os.execv('./main.py', sys.argv)
 
 
 def get_piploc(inst):
