@@ -52,7 +52,7 @@ def resort_instruments():
         trade_dict.append(t.dict())
     i = 0
     for n in sorted(trade_dict, key=lambda d: d['unrealizedPL']):
-        if 'marginUsed' in n.keys():
+        if 'marginUsed' in n.keys() and float(n['unrealizedPL']) > 0:
             i += 1
             ti.insert(0, ti.pop(ti.index(n['instrument'])))
     print(ti[:5])
@@ -91,7 +91,9 @@ def create_stats() -> dict:
             print('no stats yet', e)
         except json.decoder.JSONDecodeError as e:
             print('json file hiba', e, )
-    print('stats:', stats)
+    print(f" sl: {stats['count_sl']}/{stats['sum_sl']:.2f}",
+          f" ts: {stats['count_ts']}/{stats['sum_ts']:.2f}",
+          f" tp: {stats['count_tp']}/{stats['sum_tp']:.2f}")
     return stats
 
 

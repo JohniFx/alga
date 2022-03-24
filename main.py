@@ -81,14 +81,17 @@ class Main():
         print(msg)
 
     def on_account_changes(self):
-        # print('on account changes')
+        if datetime.now().minute % 5 == 0:
+            self.print_account(cfg.account)
+
+    def print_account(self, ac):
         if datetime.now().minute % 15 == 0:
             msg = f"{datetime.now().strftime('%H:%M:%S')}"
-            msg += f" nav:{float(cfg.account.NAV):>7.2f}"
-            msg += f" upl:{float(cfg.account.unrealizedPL):>7.2f}"
-            msg += f" t:{cfg.account.openTradeCount}"
-            msg += f" o:{cfg.account.pendingOrderCount}"
-            msg += f" p:{cfg.account.openPositionCount}"
+            msg += f" nav:{float(ac.NAV):>7.2f}"
+            msg += f" pl:{float(ac.unrealizedPL):>6.2f}"
+            msg += f" t:{ac.openTradeCount}"
+            msg += f" o:{ac.pendingOrderCount}"
+            msg += f" p:{ac.openPositionCount}"
             print(msg)
 
     def update_stats(self, data):
