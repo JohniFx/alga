@@ -1,7 +1,4 @@
 #!/usr/bin/python3
-import os
-import sys
-import v20
 import cfg
 import trader
 import quant
@@ -20,7 +17,7 @@ class Main():
         cfg.account_observers.append(self)
         time.sleep(5)
         self.stats = cfg.create_stats()
-        self.print_account(cfg.account)
+        cfg.print_account()
         threading.Thread(target=self.update_kpi).start()
         threading.Thread(target=self.run_check_instruments).start()
 
@@ -40,11 +37,7 @@ class Main():
             hour = datetime.now().hour
             n = 300 if hour >= 22 or hour <= 7 else 120
             time.sleep(n)
-        self.restart()
-
-    def restart(self):
-        print(f'\n{u.get_now()} RESTART')
-        os.execv('./main.py', sys.argv)
+        cfg.restart()
 
     def on_tick(self, cp):
         pass
@@ -81,18 +74,7 @@ class Main():
         print(msg)
 
     def on_account_changes(self):
-        if datetime.now().minute % 5 == 0:
-            self.print_account(cfg.account)
-
-    def print_account(self, ac: v20.account.Account):
-        # if datetime.now().minute % 15 == 0:
-        msg = f"{u.get_now()}"
-        msg += f" nav:{float(ac.NAV):>7.2f}"
-        msg += f" pl:{float(ac.unrealizedPL):>6.2f}"
-        msg += f" t:{ac.openTradeCount}"
-        msg += f" o:{ac.pendingOrderCount}"
-        msg += f" p:{ac.openPositionCount}"
-        print(msg)
+        pass
 
     def update_stats(self, data):
         if data.reason == 'TAKE_PROFIT_ORDER':

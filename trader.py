@@ -13,6 +13,7 @@ class Trader():
         self.initial_tradecheck()
         self.check_trades_for_breakeven()
         self.check_instruments()
+        cfg.print_account()
 
     def check_instruments(self):
         for i in cfg.resort_instruments():
@@ -64,25 +65,22 @@ class Trader():
     def check_trades_for_breakeven(self):
         cfg.account.trades.sort(key=lambda x: x.unrealizedPL, reverse=True)
         for t in cfg.account.trades:
+            # still in loss
             if t.unrealizedPL <= 0:
                 continue
+
+            cu = t.currentUnits
+            pip_pl = self.get_pip_pl(t.instrument, t.currentUnits, t.price)
+
             # already in b/e
             sl = u.get_order_by_id(t.stopLossOrderID)
-            cu = t.currentUnits
             if self.is_be(cu, sl.price, t.price):
+                self.print_trade(t, 'TABE', pip_pl)
                 continue
 
-            if cu > 0:
-                pip = cfg.instruments[t.instrument]['bid'] - t.price
-            if cu < 0:
-                pip = t.price - cfg.instruments[t.instrument]['ask']
-
-            pip_pl = pip / pow(10, cfg.get_piploc(t.instrument))
-            print(f'{u.get_now()} NOBE: #{t.id:>5} {cu:>5.0f}',
-                  f' {t.instrument}@{t.price:<10.5f} {pip_pl:>5.2f}')
+            # Move to be
             if pip_pl > cfg.global_params['be_pips']:
-                print(f'{u.get_now()} MOBE: {cu:>5.0f}',
-                      f' {t.instrument} {pip_pl:.2f}')
+                self.print_trade(t, 'MOBE', pip_pl)
                 be_sl = cfg.global_params['be_sl'] * \
                     pow(10, cfg.get_piploc(t.instrument))
                 if t.currentUnits > 0:
@@ -90,6 +88,24 @@ class Trader():
                 else:
                     sl_price = t.price - be_sl
                 self.set_stoploss(t.id, sl_price, t.instrument)
+
+            # No Be
+            print(
+                f'{u.get_now()} NOBE: #{t.id:>5} {cu:>5.0f} {t.instrument}@{t.price:<10.5f} {pip_pl:>5.2f}')
+
+    def print_trade(self, trade, kwrd: str, pip_pl: float):
+        print(f'{u.get_now()}',
+              f' {kwrd}: #{trade.id:>5}',
+              f' {trade.currentUnits:>5.0f}',
+              f' {trade.instrument}@{trade.price:<10.5f}',
+              f' {pip_pl:>5.2f}')
+
+    def get_pip_pl(self, inst: str, cu: int, price: float) -> float:
+        if cu > 0:
+            pip = cfg.instruments[inst]['bid'] - price
+        if cu < 0:
+            pip = price - cfg.instruments[inst]['ask']
+        return pip / pow(10, cfg.get_piploc(inst))
 
     @ staticmethod
     def is_trade_allowed() -> bool:

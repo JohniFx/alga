@@ -5,6 +5,7 @@ import time
 import configparser
 import json
 from datetime import datetime
+import utils as u
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -96,7 +97,7 @@ def create_stats() -> dict:
 
 
 def print_stats(stats):
-    print(f" sl: {stats['count_sl']}/{stats['sum_sl']:.2f}",
+    print(f"{u.get_now()} sl: {stats['count_sl']}/{stats['sum_sl']:.2f}",
           f" ts: {stats['count_ts']}/{stats['sum_ts']:.2f}",
           f" tp: {stats['count_tp']}/{stats['sum_tp']:.2f}")
 
@@ -145,6 +146,13 @@ def run_transaction_stream():
     except Exception as e:
         print('Transaction stream crashed. initiate restart')
         print(e)
+        restart()
+
+    def restart():
+        import os
+        import sys
+        print(f'\n{u.get_now()} RESTART')
+        os.execv('./main.py', sys.argv)
 
 
 def get_piploc(inst):
@@ -269,6 +277,16 @@ def update_account(account, changes, state):
     update_trades(account, state)
     update_positions(account, state)
     update_orders(account, state)
+
+
+def print_account():
+    ac = account
+    print(f"{u.get_now()}",
+          f" nav:{float(ac.NAV):>7.2f}",
+          f" pl:{float(ac.unrealizedPL):>6.2f}",
+          f" t:{ac.openTradeCount}",
+          f" o:{ac.pendingOrderCount}",
+          f" p:{ac.openPositionCount}")
 
 
 thread_price_stream = threading.Thread(target=run_price_stream,
