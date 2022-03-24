@@ -15,18 +15,42 @@ class Trader():
         self.check_instruments()
         cfg.print_account()
 
-    def check_instruments(self):
-        for i in cfg.resort_instruments():
-            if 'spread' not in cfg.instruments[i]:
+    def initial_tradecheck(self):
+        # TODO: ha uj instrumentum van akkor azt vegye be streambe
+        for t in cfg.account.trades:
+            if t.instrument not in cfg.tradeable_instruments:
+                print(f'{t.instrument} not in tradeables, stream')
+            if t.stopLossOrderID is None:
+                if t.unrealizedPL >= 0:
+                    self.set_stoploss(t.id, t.price, t.instrument)
+                else:
+                    print(u.get_now(), 'Close trade without stop')
+                    self.close_trade(t)
+
+    def check_trades_for_breakeven(self):
+        cfg.account.trades.sort(key=lambda x: x.unrealizedPL, reverse=True)
+        for t in cfg.account.trades:
+            # still in loss
+            if t.unrealizedPL <= 0:
                 continue
-            position = self.get_trades_by_instrument(cfg.account.trades, i)
-            if len(position) == 0:
-                self.check_instrument(i)
-            elif self.check_breakeven_for_position(cfg.account.trades, i):
-                pos = 1 if position[0].currentUnits > 0 else -1
-                self.check_instrument(i, pos)
-            if not Trader.is_trade_allowed():
-                return
+            pip_pl = self.get_pip_pl(t.instrument, t.currentUnits, t.price)
+            # already in b/e
+            sl = u.get_order_by_id(t.stopLossOrderID)
+            if self.is_be(t.currentUnits, sl.price, t.price):
+                #self.print_trade(t, 'TABE', pip_pl)
+                continue
+            # Move to be
+            if pip_pl > cfg.global_params['be_pips']:
+                self.print_trade(t, 'MOBE', pip_pl)
+                be_sl = cfg.global_params['be_sl'] * \
+                    pow(10, cfg.get_piploc(t.instrument))
+                if t.currentUnits > 0:
+                    sl_price = t.price + be_sl
+                else:
+                    sl_price = t.price - be_sl
+                self.set_stoploss(t.id, sl_price, t.instrument)
+            else:
+                self.print_trade(t, 'NOBE', pip_pl)
 
     @staticmethod
     def get_max_instrument():
@@ -50,6 +74,19 @@ class Trader():
                             (t.currentUnits < 0 and o.price <= t.price))
         return all(all_be)
 
+    def check_instruments(self):
+        for i in cfg.resort_instruments():
+            if 'spread' not in cfg.instruments[i]:
+                continue
+            position = self.get_trades_by_instrument(cfg.account.trades, i)
+            if len(position) == 0:
+                self.check_instrument(i)
+            elif self.check_breakeven_for_position(cfg.account.trades, i):
+                pos = 1 if position[0].currentUnits > 0 else -1
+                self.check_instrument(i, pos)
+            if not Trader.is_trade_allowed():
+                return
+
     def get_trades_by_instrument(self, trades, instrument):
         inst_trades = []
         for t in trades:
@@ -61,37 +98,6 @@ class Trader():
         c1 = units > 0 and sl >= entry
         c2 = units < 0 and sl <= entry
         return True if c1 or c2 else False
-
-    def check_trades_for_breakeven(self):
-        cfg.account.trades.sort(key=lambda x: x.unrealizedPL, reverse=True)
-        for t in cfg.account.trades:
-            # still in loss
-            if t.unrealizedPL <= 0:
-                continue
-
-            cu = t.currentUnits
-            pip_pl = self.get_pip_pl(t.instrument, t.currentUnits, t.price)
-
-            # already in b/e
-            sl = u.get_order_by_id(t.stopLossOrderID)
-            if self.is_be(cu, sl.price, t.price):
-                self.print_trade(t, 'TABE', pip_pl)
-                continue
-
-            # Move to be
-            if pip_pl > cfg.global_params['be_pips']:
-                self.print_trade(t, 'MOBE', pip_pl)
-                be_sl = cfg.global_params['be_sl'] * \
-                    pow(10, cfg.get_piploc(t.instrument))
-                if t.currentUnits > 0:
-                    sl_price = t.price + be_sl
-                else:
-                    sl_price = t.price - be_sl
-                self.set_stoploss(t.id, sl_price, t.instrument)
-
-            # No Be
-            print(
-                f'{u.get_now()} NOBE: #{t.id:>5} {cu:>5.0f} {t.instrument}@{t.price:<10.5f} {pip_pl:>5.2f}')
 
     def print_trade(self, trade, kwrd: str, pip_pl: float):
         print(f'{u.get_now()}',
@@ -216,19 +222,6 @@ class Trader():
             cfg.ctx.trade.close(cfg.ACCOUNT_ID, trade.id, units='ALL')
         else:
             cfg.ctx.trade.close(cfg.ACCOUNT_ID, trade.id, units=str(units))
-
-    def initial_tradecheck(self):
-        # TODO: ha uj instrumentum van akkor azt vegye be streambe
-        for t in cfg.account.trades:
-            if t.instrument not in cfg.tradeable_instruments:
-                print(f'{t.instrument} not in tradeables, stream')
-
-            if t.stopLossOrderID is None:
-                if t.unrealizedPL >= 0:
-                    self.set_stoploss(t.id, t.price, t.instrument)
-                else:
-                    print(u.get_now(), 'Close trade without stop')
-                    self.close_trade(t)
 
     def check_before_stopmove(self, tradeid: int, new_sl: float):
         t = u.get_trade_by_id(tradeid)

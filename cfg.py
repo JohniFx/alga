@@ -56,7 +56,7 @@ def resort_instruments():
         if 'marginUsed' in n.keys() and float(n['unrealizedPL']) > 0:
             i += 1
             ti.insert(0, ti.pop(ti.index(n['instrument'])))
-    print(ti[:5])
+    print(f'{u.get_now()}', ti[:3])
     return ti
 
 
@@ -121,19 +121,24 @@ def run_price_stream(tradeable_instruments: list):
     print('start price stream')
     tradeinsts = ','.join(tradeable_instruments)
     response = ctxs.pricing.stream(ACCOUNT_ID, instruments=tradeinsts)
-    for typ, data in response.parts():
-        if typ == "pricing.ClientPrice":
-            # print(f'{data.instrument} {data.bids[0].price} {data.tradeable}')
-            cp = dict(
-                i=data.instrument,
-                bid=data.bids[0].price,
-                ask=data.asks[0].price)
-            notify_price_observers(cp)
-            instruments[data.instrument]['bid'] = data.bids[0].price
-            instruments[data.instrument]['ask'] = data.asks[0].price
-            instruments[data.instrument]['spread'] = round(
-                data.asks[0].price-data.bids[0].price,
-                instruments[data.instrument]['displayPrecision'])
+    try:
+        for typ, data in response.parts():
+            if typ == "pricing.ClientPrice":
+                # print(f'{data.instrument} {data.bids[0].price} {data.tradeable}')
+                cp = dict(
+                    i=data.instrument,
+                    bid=data.bids[0].price,
+                    ask=data.asks[0].price)
+                notify_price_observers(cp)
+                instruments[data.instrument]['bid'] = data.bids[0].price
+                instruments[data.instrument]['ask'] = data.asks[0].price
+                instruments[data.instrument]['spread'] = round(
+                    data.asks[0].price-data.bids[0].price,
+                    instruments[data.instrument]['displayPrecision'])
+    except ValueError as e:
+        print('ValueError in pricestream', e)
+    except Exception as e:
+        print('Exception in price stream', e)
 
 
 def run_transaction_stream():
@@ -283,11 +288,11 @@ def update_account(account, changes, state):
 def print_account():
     ac = account
     print(f"{u.get_now()}",
-          f" nav:{float(ac.NAV):>7.2f}",
-          f" pl:{float(ac.unrealizedPL):>6.2f}",
-          f" t:{ac.openTradeCount}",
-          f" o:{ac.pendingOrderCount}",
-          f" p:{ac.openPositionCount}")
+          f"NAV :{float(ac.NAV):>7.2f}",
+          f"pl:{float(ac.unrealizedPL):>6.2f}",
+          f"t:{ac.openTradeCount}",
+          f"o:{ac.pendingOrderCount}",
+          f"p:{ac.openPositionCount}")
 
 
 thread_price_stream = threading.Thread(target=run_price_stream,

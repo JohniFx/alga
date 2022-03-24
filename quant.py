@@ -217,14 +217,9 @@ class Quant():
             high=df.ask_h.iloc[-1],
             stop_level=1,
             stop_dist=1,
-            target_level=1,
-            target_dist=1,
-            risk_reward_ratio=1,
-            probability=1
         )
         if (s1 != 0) or (s2 != 0) or (s3 != 0) or (s4 != 0):
             pp = pprint.PrettyPrinter(indent=4)
-            print('')
             pp.pprint(signal)
         if (s1 == s2) and (s2 == s3) and (s3 == s4):
             return s1, 'XL'
