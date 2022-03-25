@@ -82,12 +82,12 @@ transaction_observers = []
 account_observers = []
 
 global_params = dict(
-    tp=60,
-    sl=12,
+    tp=30,
+    sl=11,
     ts=15,
     max_spread=3,
-    be_pips=10,
-    be_sl=1)
+    be_pips=11,
+    be_sl=2)
 
 
 def create_stats() -> dict:

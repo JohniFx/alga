@@ -12,9 +12,12 @@ class Trader():
 
     def do_trading(self):
         self.initial_tradecheck()
-        cfg.account.trades.sort(key=lambda x: x.unrealizedPL, reverse=True)
-        self.check_trades_for_breakeven()
-        self.check_instruments()
+        try:
+            cfg.account.trades.sort(key=lambda x: x.unrealizedPL, reverse=True)
+            self.check_trades_for_breakeven()
+            self.check_instruments()
+        except KeyError as e:
+            print('keyerror van:', e)
         cfg.print_account()
 
     def initial_tradecheck(self):
