@@ -25,12 +25,28 @@ ctxs.set_header(key='Authorization', value=key)
 # global account_id
 
 
+def restart():
+    import os
+    import sys
+    print(f'\n{u.get_now()} RESTART')
+    os.execv('./main.py', sys.argv)
+
+
 def get_account():
     response = ctx.account.get(ACCOUNT_ID)
     return response.get('account'), response.get('lastTransactionID')
 
 
-account, lastTransactionID = get_account()
+try:
+    account, lastTransactionID = get_account()
+except v20.errors.V20Timeout as e:
+    print('v20 timeout exception.. restart')
+    time.sleep(60)
+    restart()
+except Exception as e:
+    print('exception at get_account(). wait 1 min and restart')
+    time.sleep(60)
+    restart()
 
 messages = []
 
@@ -154,13 +170,6 @@ def run_transaction_stream():
         print('Transaction stream crashed. initiate restart')
         print(e)
         restart()
-
-
-def restart():
-    import os
-    import sys
-    print(f'\n{u.get_now()} RESTART')
-    os.execv('./main.py', sys.argv)
 
 
 def get_piploc(inst):
