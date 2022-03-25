@@ -35,7 +35,7 @@ class Main():
             t = trader.Trader()
             threading.Thread(target=t.do_trading).start()
             hour = datetime.now().hour
-            n = 300 if hour >= 22 or hour <= 7 else 120
+            n = 300 if hour >= 22 or hour <= 8 else 120
             time.sleep(n)
         cfg.restart()
 

@@ -180,9 +180,14 @@ def run_account_update(account, lastTransactionID):
     print('start account polling')
     _lastId = lastTransactionID
     while True:
-        r = ctx.account.changes(
-            ACCOUNT_ID,
-            sinceTransactionID=_lastId)
+        try:
+            r = ctx.account.changes(
+                ACCOUNT_ID,
+                sinceTransactionID=_lastId)
+        except Exception as e:
+            print('Account update loop crashed', e)
+            time.sleep(60)
+            restart()
         changes = r.get('changes')
         state = r.get('state')
         _lastId = r.get('lastTransactionID')
