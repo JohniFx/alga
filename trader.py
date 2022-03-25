@@ -28,10 +28,6 @@ class Trader():
 
     def check_trades_for_breakeven(self):
         for t in cfg.account.trades:
-            try:
-                self.get_distance_from_sl(t)
-            except Exception as e:
-                print(t.instrument, e)
             if t.unrealizedPL <= 0 or self.is_be(t, u.get_order_by_id(t.stopLossOrderID)):
                 continue
             pip_pl = self.get_pip_pl(t.instrument, t.currentUnits, t.price)
