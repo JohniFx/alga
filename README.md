@@ -16,6 +16,8 @@ Some additional ipynb jupyter notebook files also included. They contain backgro
 
 Unfortunately the algo is not successful, still producing losses, so it may be called loss generator or account destroyer.  I have way to many ideas to implement but time is a constraint.
 
+2022-04-01: development mostly on quant side, to improve entry and forecasting.
+
 2022-03-10
 
 added a rule to block trading if there is already a trade within loss. 
