@@ -9,7 +9,7 @@ import curses
 import schedule
 import utils
 
-
+# test
 class TradeManager():
     def __init__(self, ctx):
         self.messages = []
