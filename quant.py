@@ -163,8 +163,8 @@ class Quant():
 
         df = self.get_candles(inst, count, tf)
         if df.volume.iloc[-1] < 150:
+            print(f'{inst} low volume')
             return 0
-        self.add_hilo(df)
         self.add_mom(df)
         self.add_kpi(df, inst)
         self.add_stochastic(df)
@@ -221,9 +221,8 @@ class Quant():
             stop_dist=1,
             volume=df.volume.iloc[-1]
         )
-        if (s1 != 0) or (s2 != 0) or (s3 != 0) or (s4 != 0):
-            pp = pprint.PrettyPrinter(indent=4)
-            pp.pprint(signal)
+        pp = pprint.PrettyPrinter(indent=4)
+        pp.pprint(signal)
         if (s1 == s2) and (s2 == s3) and (s3 == s4):
             return s1, 'XL'
 

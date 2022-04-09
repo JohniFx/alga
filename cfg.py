@@ -72,7 +72,8 @@ def resort_instruments():
         if 'marginUsed' in n.keys() and float(n['unrealizedPL']) > 0:
             i += 1
             ti.insert(0, ti.pop(ti.index(n['instrument'])))
-    print(f'{u.get_now()}', ti[:3])
+    if len(account.trades) > 0:
+        print(f'{u.get_now()}', ti[:len(account.trades)])
     return ti
 
 
