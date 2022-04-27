@@ -73,7 +73,8 @@ def resort_instruments():
             i += 1
             ti.insert(0, ti.pop(ti.index(n['instrument'])))
     if len(account.trades) > 0:
-        print(f'{u.get_now()}', ti[:len(account.trades)])
+        l = min([len(account.trades), 5])
+        # print(f'{u.get_now()}', ti[:l])
     return ti
 
 
@@ -161,7 +162,7 @@ def run_price_stream(tradeable_instruments: list):
 
 
 def run_transaction_stream():
-    print('start transaction stream')
+    # print('start transaction stream')
     response = ctxs.transaction.stream(ACCOUNT_ID)
     try:
         for t, d in response.parts():
@@ -178,7 +179,7 @@ def get_piploc(inst):
 
 
 def run_account_update(account, lastTransactionID):
-    print('start account polling')
+    # print('start account polling')
     _lastId = lastTransactionID
     while True:
         try:

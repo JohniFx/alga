@@ -31,21 +31,29 @@ class Trader():
 
     def check_trades_for_breakeven(self):
         for t in cfg.account.trades:
-            if t.unrealizedPL <= 0 or self.is_be(t, u.get_order_by_id(t.stopLossOrderID)):
-                continue
             pip_pl = self.get_pip_pl(t.instrument, t.currentUnits, t.price)
-            # Move to be
+            # trade still in loss
+            if t.unrealizedPL <= 0:
+                self.print_trade(t, 'TNEG', pip_pl)
+                continue
+            # trade already in B/E > check to add
+            if self.is_be(t, u.get_order_by_id(t.stopLossOrderID)):
+                self.print_trade(t, 'B/E+', pip_pl)
+                # try to add
+                pos = 1 if t.currentUnits > 0 else -1
+                self.check_instrument(t.instrument, pos)
+                continue
+            # trade green but not yet b/e
             if pip_pl > cfg.global_params['be_pips']:
                 self.print_trade(t, 'MOBE', pip_pl)
-                be_sl = cfg.global_params['be_sl'] * \
-                    pow(10, cfg.get_piploc(t.instrument))
+                be_sl = cfg.global_params['be_sl'] * pow(10, cfg.get_piploc(t.instrument))
                 if t.currentUnits > 0:
                     sl_price = t.price + be_sl
                 else:
                     sl_price = t.price - be_sl
                 self.set_stoploss(t.id, sl_price, t.instrument)
-            else:
-                self.print_trade(t, 'NOBE', pip_pl)
+
+            self.print_trade(t, 'NOBE', pip_pl)
 
     def get_distance_from_sl(self, trade: v20.trade):
         sl = u.get_order_by_id(trade.stopLossOrderID)
@@ -97,10 +105,11 @@ class Trader():
             if len(position) == 0:
                 self.check_instrument(i)
             elif self.check_breakeven_for_position(cfg.account.trades, i):
+                print('possible scale in', i)
                 pos = 1 if position[0].currentUnits > 0 else -1
                 self.check_instrument(i, pos)
-            if not Trader.is_trade_allowed():
-                return
+            # if not Trader.is_trade_allowed():
+            #     return
 
     def get_trades_by_instrument(self, trades, instrument):
         inst_trades = []
@@ -135,9 +144,9 @@ class Trader():
         return True
 
     def check_instrument(self, inst: str, positioning: int = 0) -> str:
-        # print(f'{u.get_now()}  check {inst} positioning:{positioning}')
-        # get signal
-        signal, signaltype = quant.Quant().get_signal(inst, tf='M5')
+        print(f'{u.get_now()}  check {inst} positioning:{positioning}')
+
+        signal, signaltype = quant.Quant().get_signal(inst, 15, 'M5', positioning)
         valid = [(-1, -1), (-1, 0), (1, 0), (1, 1)]
         if (signal, positioning) not in valid:
             return None
