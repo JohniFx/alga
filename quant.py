@@ -164,8 +164,8 @@ class Quant():
 
         df = self.get_candles(inst, count, tf)
         if df.volume.iloc[-2:].mean() < 100:
-            print(f'{inst} low volume: {df.volume.iloc[-2:].mean():.2f}')
-            return 0, 'ns'
+            # print(f'{inst} low volume: {df.volume.iloc[-2:].mean():.2f}')
+            return 0, 'LV'
         self.add_hilo(df)
         self.add_mom(df)
         self.add_kpi(df, inst)

@@ -14,6 +14,7 @@ class Trader():
         self.initial_tradecheck()
         try:
             cfg.account.trades.sort(key=lambda x: x.unrealizedPL, reverse=True)
+            cfg.account.positions.sort(key=lambda x: x.unrealizedPL, reverse=True)
             self.check_trades_for_breakeven()
             self.check_instruments()
         except KeyError as e:
@@ -30,7 +31,8 @@ class Trader():
                     self.close_trade(t)
 
     def check_positions(self):
-        print('Check positions', len(cfg.account.positions))
+        print('Check positions', cfg.account.openPositionCount)
+
         for p in cfg.account.positions:
             if p.long.units > 0:
                 print(f' {p.instrument} {p.unrealizedPL:>8.2f} {p.long.units:>6.0f} {len(p.long.tradeIDs)}')
@@ -43,7 +45,8 @@ class Trader():
                 return p
 
     def check_trades_for_breakeven(self):
-        self.check_positions()
+        if len(cfg.account.trades) > cfg.account.openPositionCount:
+            self.check_positions()
 
         print('Check trades', len(cfg.account.trades))
         for t in cfg.account.trades:
@@ -161,7 +164,7 @@ class Trader():
         return True
 
     def check_instrument(self, inst: str, positioning: int = 0) -> str:
-        print(f'{u.get_now()} {inst} pos: {positioning}')
+        # print(f'{u.get_now()} {inst} pos: {positioning}')
 
         signal, signaltype = quant.Quant().get_signal(inst, 15, 'M5', positioning)
         valid = [(-1, -1), (-1, 0), (1, 0), (1, 1)]
