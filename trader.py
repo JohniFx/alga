@@ -29,7 +29,23 @@ class Trader():
                     print(u.get_now(), 'Close trade without stop')
                     self.close_trade(t)
 
+    def check_positions(self):
+        print('Check positions', len(cfg.account.positions))
+        for p in cfg.account.positions:
+            if p.long.units > 0:
+                print(f' {p.instrument} {p.unrealizedPL:>8.2f} {p.long.units:>6.0f} {len(p.long.tradeIDs)}')
+            if p.short.units < 0:
+                print(f' {p.instrument} {p.unrealizedPL:>8.2f} {p.short.units:>6.0f} {len(p.short.tradeIDs)}')
+
+    def get_position(self, inst):
+        for p in cfg.account.positions:
+            if p.instrument == inst:
+                return p
+
     def check_trades_for_breakeven(self):
+        self.check_positions()
+
+        print('Check trades', len(cfg.account.trades))
         for t in cfg.account.trades:
             pip_pl = self.get_pip_pl(t.instrument, t.currentUnits, t.price)
             # trade still in loss
@@ -40,8 +56,9 @@ class Trader():
             if self.is_be(t, u.get_order_by_id(t.stopLossOrderID)):
                 self.print_trade(t, 'B/E+', pip_pl)
                 # try to add
-                pos = 1 if t.currentUnits > 0 else -1
-                self.check_instrument(t.instrument, pos)
+                if self.get_position(t.instrument).unrealizedPL > 0:
+                    pos = 1 if t.currentUnits > 0 else -1
+                    self.check_instrument(t.instrument, pos)
                 continue
             # trade green but not yet b/e
             if pip_pl > cfg.global_params['be_pips']:
@@ -119,10 +136,10 @@ class Trader():
         return inst_trades
 
     def print_trade(self, trade, kwrd: str, pip_pl: float):
-        print(f'{u.get_now()}',
+        print(f'',
               f'{kwrd}: #{trade.id:>5}',
               f'{trade.currentUnits:>5.0f}',
-              f'{trade.instrument}@{trade.price:<10.5f}',
+              f'{trade.instrument} {trade.price:>10.5f}',
               f'{pip_pl:>5.2f}')
 
     def get_pip_pl(self, inst: str, cu: int, price: float) -> float:
@@ -144,7 +161,7 @@ class Trader():
         return True
 
     def check_instrument(self, inst: str, positioning: int = 0) -> str:
-        print(f'{u.get_now()}  check {inst} positioning:{positioning}')
+        print(f'{u.get_now()} {inst} pos: {positioning}')
 
         signal, signaltype = quant.Quant().get_signal(inst, 15, 'M5', positioning)
         valid = [(-1, -1), (-1, 0), (1, 0), (1, 1)]
@@ -174,10 +191,10 @@ class Trader():
         msg = (f'{u.get_now()} OPEN {signaltype} {inst}'
                f' {units}'
                f' {entry:.5f}'
-               f' SL:{stopprice:.5f}'
-               f' TP:{profitPrice:>9.5f}'
-               f' A:{ask:>8.5f}/B:{bid:<8.5f}'
-               f' {spread:>6.4f}')
+               #    f' SL:{stopprice:.5f}'
+               #    f' TP:{profitPrice:>9.5f}'
+               #    f' A:{ask:>8.5f}/B:{bid:<8.5f}'
+               f' {spread:>6.5f}')
         print(msg)
         threading.Thread(
             target=self.place_market,
