@@ -55,9 +55,10 @@ instruments = {i.name: i.dict() for i in insts}
 
 tradeable_instruments = [
     'EUR_USD', 'EUR_CAD', 'EUR_NZD', 'EUR_CHF', 'EUR_JPY', 'EUR_AUD', 'EUR_GBP',
-    'GBP_USD', 'GBP_CAD', 'GBP_NZD', 'GBP_CHF', 'GBP_JPY', 'GBP_AUD',
-    'AUD_USD', 'AUD_CAD', 'AUD_NZD', 'AUD_CHF', 'AUD_JPY',
-    'NZD_USD', 'NZD_CAD', 'NZD_JPY']
+    'GBP_USD', 'GBP_CAD', 'GBP_JPY', 'GBP_AUD',
+    'AUD_USD', 'AUD_CAD', 'AUD_NZD', 'AUD_JPY',
+    'NZD_USD', 'NZD_CAD', 'NZD_JPY',
+    'USD_CHF', 'USD_CAD', 'USD_JPY']
 
 
 def resort_instruments():
