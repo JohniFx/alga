@@ -12,9 +12,9 @@ class Trader():
 
     def do_trading(self):
         self.initial_tradecheck()
+        cfg.account.trades.sort(key=lambda x: x.unrealizedPL, reverse=True)
+        cfg.account.positions.sort(key=lambda x: x.unrealizedPL, reverse=True)
         try:
-            cfg.account.trades.sort(key=lambda x: x.unrealizedPL, reverse=True)
-            cfg.account.positions.sort(key=lambda x: x.unrealizedPL, reverse=True)
             self.check_trades_for_breakeven()
             self.check_instruments()
         except KeyError as e:
@@ -34,10 +34,10 @@ class Trader():
         print('Check positions', cfg.account.openPositionCount)
 
         for p in cfg.account.positions:
-            if p.long.units > 0:
-                print(f' {p.instrument} {p.unrealizedPL:>8.2f} {p.long.units:>6.0f} {len(p.long.tradeIDs)}')
-            if p.short.units < 0:
-                print(f' {p.instrument} {p.unrealizedPL:>8.2f} {p.short.units:>6.0f} {len(p.short.tradeIDs)}')
+            if p.long.units > 0 and len(p.long.tradeIDs) > 1:
+                print(f' {p.instrument} {p.long.units:>6.0f} {p.unrealizedPL:>8.2f} {len(p.long.tradeIDs)}')
+            if p.short.units < 0 and len(p.short.tradeIDs) > 1:
+                print(f' {p.instrument} {p.short.units:>6.0f} {p.unrealizedPL:>8.2f} {len(p.short.tradeIDs)}')
 
     def get_position(self, inst):
         for p in cfg.account.positions:

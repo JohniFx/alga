@@ -141,7 +141,10 @@ class Quant():
         mom_q95 = self.get_kpi(inst, 'mom_q95')
         df['mom_q05'] = mom_q5
         df['mom_q95'] = mom_q95
-        df['lr_slope'] = 1 if slope > 0 else -1
+        try:
+            df['lr_slope'] = 1 if slope > 0 else -1
+        except TypeError as te:
+            print('exception', te)
 
     def add_hilo(self, df):
         df['lows'] = np.sign(df.mid_l-df.mid_l.shift(1))
