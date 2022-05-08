@@ -163,6 +163,17 @@ class Quant():
         if signal == 1:
             pass
 
+    def get_stop(df, direction, max_stop_distance=12):
+        if direction ==  1:
+            stopdist = df.ask_c.iloc[-1] - df.bid_l.iloc[-5:].min()
+            print(f'ask_c: {df.ask_c.iloc[-1]} lowest bid:{df.bid_l.iloc[-5:].min()}')
+        if direction == -1:
+            stopdist = df.ask_h.iloc[-5:].max() - df.bid_c.iloc[-1]
+            print(f'ask high: {df.ask_h.iloc[-5:].max()} bid_c:{df.bid_c.iloc[-1]}')
+        print(f'{direction}: {stopdist:.6f}')
+        return stopdist
+
+
     def get_signal(self, inst: str, count: int = 15, tf: str = 'M5', positioning: int = 0):
 
         df = self.get_candles(inst, count, tf)
