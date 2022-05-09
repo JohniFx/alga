@@ -206,11 +206,13 @@ class Trader():
         prec = cfg.instruments[inst]['displayPrecision']
         gp_ts = cfg.global_params['ts']
         tsdist = gp_ts * pow(10, cfg.get_piploc(inst))
-        tsdist = ts_dist
+        if ts_dist > tsdist:
+            tsdist = ts_dist
         sl_on_fill = dict(timeInForce='GTC', price=f'{stopPrice:.{prec}f}')
         tp_on_fill = dict(timeInForce='GTC', price=f'{profitPrice:.{prec}f}')
         ts_on_fill = dict(timeInForce='GTC', distance=f'{tsdist:.{prec}f}')
         ce = dict(id=signaltype, tag='Signal id', comment='Signal id commented')
+        #
         order = dict(
             type='MARKET',
             instrument=inst,

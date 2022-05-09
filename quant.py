@@ -167,10 +167,10 @@ class Quant():
         extreme_distance = None
         if direction == 1:
             extreme_distance = df.ask_c.iloc[-1] - df.bid_l.iloc[-5:].min()
-            print(f'ask_c: {df.ask_c.iloc[-1]} lowest bid:{df.bid_l.iloc[-range:].min()}')
+            # print(f'ask_c: {df.ask_c.iloc[-1]} lowest bid:{df.bid_l.iloc[-range:].min()}')
         if direction == -1:
             extreme_distance = df.ask_h.iloc[-5:].max() - df.bid_c.iloc[-1]
-            print(f'ask high: {df.ask_h.iloc[-5:].max()} bid_c:{df.bid_c.iloc[-1]}')
+            # print(f'ask high: {df.ask_h.iloc[-5:].max()} bid_c:{df.bid_c.iloc[-1]}')
         return extreme_distance
 
     def get_signal(self, inst: str, count: int = 15, tf: str = 'M5', positioning: int = 0):
