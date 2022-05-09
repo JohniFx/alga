@@ -163,16 +163,15 @@ class Quant():
         if signal == 1:
             pass
 
-    def get_stop(df, direction, max_stop_distance=12):
-        if direction ==  1:
-            stopdist = df.ask_c.iloc[-1] - df.bid_l.iloc[-5:].min()
-            print(f'ask_c: {df.ask_c.iloc[-1]} lowest bid:{df.bid_l.iloc[-5:].min()}')
+    def get_extreme_distance(self, df, direction, range=5):
+        extreme_distance = None
+        if direction == 1:
+            extreme_distance = df.ask_c.iloc[-1] - df.bid_l.iloc[-5:].min()
+            print(f'ask_c: {df.ask_c.iloc[-1]} lowest bid:{df.bid_l.iloc[-range:].min()}')
         if direction == -1:
-            stopdist = df.ask_h.iloc[-5:].max() - df.bid_c.iloc[-1]
+            extreme_distance = df.ask_h.iloc[-5:].max() - df.bid_c.iloc[-1]
             print(f'ask high: {df.ask_h.iloc[-5:].max()} bid_c:{df.bid_c.iloc[-1]}')
-        print(f'{direction}: {stopdist:.6f}')
-        return stopdist
-
+        return extreme_distance
 
     def get_signal(self, inst: str, count: int = 15, tf: str = 'M5', positioning: int = 0):
 
@@ -213,36 +212,24 @@ class Quant():
         df['s4'] = np.where(cd2, -1, df['s4'])
         s4 = df.s4.iloc[-1]
 
-        signals = dict(
-            s1=s1,
-            s2=s2,
-            s3=s3,
-            s4=s4,
-            lrg=df.lr_slope.iloc[-1]
-        )
+        print(f'{u.get_now()} SGNL: {inst} P:{positioning} S3:{s3} LR:{df.lr_slope.iloc[-1]}')
+
         signal = dict(
             inst=inst,
             tf=tf,
             count=count,
-            signals=signals,
+            signal=s3,
+            signaltype='S3',
+            lrg=df.lr_slope.iloc[-1],
             low=df.bid_l.iloc[-1],
             high=df.ask_h.iloc[-1],
             stop_level=1,
             stop_dist=1,
+            ts_dist=self.get_extreme_distance(df, s3),
             volume=df.volume.iloc[-1]
         )
 
-        if s3 != 0:
-            print(f'{u.get_now()} SGNL: {inst} P:{positioning} S3:{s3} LR:{df.lr_slope.iloc[-1]}')
-            return s3, 'S3'
-        if s2 != 0:
-            return s2, 'S2'
-        if s4 != 0:
-            return s4, 'S4'
-        if s1 != 0:
-            return s1, 'S1'
-
-        return 0, ''
+        return signal
 
 
 if __name__ == "__main__":

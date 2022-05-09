@@ -166,16 +166,14 @@ class Trader():
     def check_instrument(self, inst: str, positioning: int = 0) -> str:
         # print(f'{u.get_now()} {inst} pos: {positioning}')
 
-        signal, signaltype = quant.Quant().get_signal(inst, 15, 'M5', positioning)
+        signal = quant.Quant().get_signal(inst, 15, 'M5', positioning)
         valid = [(-1, -1), (-1, 0), (1, 0), (1, 1)]
-        if (signal, positioning) not in valid:
+        if (signal['signal'], positioning) not in valid:
             return None
 
         sl = cfg.global_params['sl']
         tp = cfg.global_params['tp']
-        units = int(cfg.account.marginAvailable/100) * signal
-        if signaltype == 'XL':
-            units *= 2
+        units = int(cfg.account.marginAvailable/100) * signal['signal']
 
         ask = cfg.instruments[inst]['ask']
         bid = cfg.instruments[inst]['bid']
@@ -187,11 +185,11 @@ class Trader():
         if spread_piploc > cfg.global_params['max_spread']:
             return
 
-        entry = ask if signal == 1 else bid
-        stopprice = entry - signal * sl * piploc
-        profitPrice = entry + signal * tp * piploc
+        entry = ask if signal['signal'] == 1 else bid
+        stopprice = entry - signal['signal'] * sl * piploc
+        profitPrice = entry + signal['signal'] * tp * piploc
 
-        msg = (f'{u.get_now()} OPEN {signaltype} {inst}'
+        msg = (f'{u.get_now()} OPEN {signal["signaltype"]} {inst}'
                f' {units}'
                f' {entry:.5f}'
                #    f' SL:{stopprice:.5f}'
@@ -199,18 +197,20 @@ class Trader():
                #    f' A:{ask:>8.5f}/B:{bid:<8.5f}'
                f' {spread:>6.5f}')
         print(msg)
-        threading.Thread(
-            target=self.place_market,
-            args=[inst, units, stopprice, profitPrice, signaltype]).start()
+        self.place_market(inst, units, stopprice, profitPrice, 'S3', signal['ts_dist'])
+        # threading.Thread(
+        #     target=self.place_market,
+        #     args=[inst, units, stopprice, profitPrice, signal['signaltype'], signal['ts_dist']]).start()
 
-    def place_market(self, inst, units, stopPrice, profitPrice=None, id='0'):
+    def place_market(self, inst, units, stopPrice, profitPrice=None, signaltype='0', ts_dist=0):
         prec = cfg.instruments[inst]['displayPrecision']
         gp_ts = cfg.global_params['ts']
         tsdist = gp_ts * pow(10, cfg.get_piploc(inst))
+        tsdist = ts_dist
         sl_on_fill = dict(timeInForce='GTC', price=f'{stopPrice:.{prec}f}')
         tp_on_fill = dict(timeInForce='GTC', price=f'{profitPrice:.{prec}f}')
         ts_on_fill = dict(timeInForce='GTC', distance=f'{tsdist:.{prec}f}')
-        ce = dict(id=id, tag='Signal id', comment='Signal id commented')
+        ce = dict(id=signaltype, tag='Signal id', comment='Signal id commented')
         order = dict(
             type='MARKET',
             instrument=inst,
