@@ -85,9 +85,9 @@ transaction_observers = []
 account_observers = []
 
 global_params = dict(
-    tp=40,
-    sl=10,
-    ts=25,
+    tp=25,
+    sl=11,
+    ts=20,
     max_spread=3,
     be_pips=11,
     be_sl=2)

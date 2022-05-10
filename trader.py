@@ -14,21 +14,13 @@ class Trader():
         self.initial_tradecheck()
         cfg.account.trades.sort(key=lambda x: x.unrealizedPL, reverse=True)
         cfg.account.positions.sort(key=lambda x: x.unrealizedPL, reverse=True)
+        self.check_trades_for_breakeven()
         try:
-            self.check_trades_for_breakeven()
             self.check_instruments()
         except KeyError as e:
             print('keyerror van:', e)
         cfg.print_account()
-
-    def initial_tradecheck(self):
-        for t in cfg.account.trades:
-            if t.stopLossOrderID is None:
-                if t.unrealizedPL >= 0:
-                    self.set_stoploss(t.id, t.price, t.instrument)
-                else:
-                    print(u.get_now(), 'Close trade without stop')
-                    self.close_trade(t)
+        self.check_positions()
 
     def check_positions(self):
         print('Check positions', cfg.account.openPositionCount)
@@ -73,7 +65,7 @@ class Trader():
                     sl_price = t.price - be_sl
                 self.set_stoploss(t.id, sl_price, t.instrument)
 
-            self.print_trade(t, 'NOBE', pip_pl)
+            # self.print_trade(t, 'NOBE', pip_pl)
 
     def get_distance_from_sl(self, trade: v20.trade):
         sl = u.get_order_by_id(trade.stopLossOrderID)
@@ -128,8 +120,8 @@ class Trader():
                 print('possible scale in', i)
                 pos = 1 if position[0].currentUnits > 0 else -1
                 self.check_instrument(i, pos)
-            # if not Trader.is_trade_allowed():
-            #     return
+            if not Trader.is_trade_allowed():
+                return
 
     def get_trades_by_instrument(self, trades, instrument):
         inst_trades = []
@@ -154,6 +146,10 @@ class Trader():
 
     @ staticmethod
     def is_trade_allowed() -> bool:
+        h = datetime.datetime.now().hour
+        if 6 < h < 21:
+            return True
+        #
         for t in cfg.account.trades:
             if t.unrealizedPL <= 0:
                 print(
@@ -288,6 +284,15 @@ class Trader():
             tradeid,
             stopLoss=sl
         )
+
+    def initial_tradecheck(self):
+        for t in cfg.account.trades:
+            if t.stopLossOrderID is None:
+                if t.unrealizedPL >= 0:
+                    self.set_stoploss(t.id, t.price, t.instrument)
+                else:
+                    print(u.get_now(), 'Close trade without stop')
+                    self.close_trade(t)
 
 
 if __name__ == '__main__':
