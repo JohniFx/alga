@@ -11,41 +11,56 @@ class Trader():
         self.initial_tradecheck()
 
     def do_trading(self):
-        self.initial_tradecheck()
         cfg.account.trades.sort(key=lambda x: x.unrealizedPL, reverse=True)
-        cfg.account.positions.sort(key=lambda x: x.unrealizedPL, reverse=True)
-        self.check_trades_for_breakeven()
-        try:
-            self.check_instruments()
-        except KeyError as e:
-            print('keyerror van:', e)
-        cfg.print_account()
+        #
+        print('Check positions')
         self.check_positions()
+        #
+        print('Check trades')
+        self.check_trades()
+        #
+        print('Check instruments')
+        self.check_instruments()
+        #
+        cfg.print_account()
 
     def check_positions(self):
-        print('Check positions', cfg.account.openPositionCount)
-
-        for p in cfg.account.positions:
+        if len(cfg.account.trades) < cfg.account.openPositionCount:
+            return
+        #
+        positions = cfg.ctx.position.list_open(accountID=cfg.ACCOUNT_ID).get('positions')
+        positions = sorted(positions, key=lambda position: position.unrealizedPL, reverse=True)
+        #
+        for p in positions:
+            ps = None
             if p.long.units > 0 and len(p.long.tradeIDs) > 1:
-                print(f' {p.instrument} {p.long.units:>6.0f} {p.unrealizedPL:>8.2f} {len(p.long.tradeIDs)}')
+                ps = p.long
             if p.short.units < 0 and len(p.short.tradeIDs) > 1:
-                print(f' {p.instrument} {p.short.units:>6.0f} {p.unrealizedPL:>8.2f} {len(p.short.tradeIDs)}')
+                ps = p.short
+            if ps is not None:
+                print(f'{p.instrument} pl:{p.unrealizedPL:<5.2f} ap:{ps.averagePrice:>10.5f} units:{ps.units:>6.0f}  t:{len(ps.tradeIDs)}')
+                #
+                trades = cfg.ctx.trade.list(accountID=cfg.ACCOUNT_ID, instrument=p.instrument).get('trades')
+                trades = sorted(trades, key=lambda trade: trade.unrealizedPL, reverse=False)
+                #
+                losingtrades = 0
+                for t in trades:
+                    print(f'\t{t.id} {t.instrument} {t.currentUnits:.0f} {t.unrealizedPL:>7.4f} {t.price:>8.4f} sl:{t.stopLossOrder.price:>8.5f}')
+                    if t.unrealizedPL < 0:
+                        losingtrades += 1
+                if p.unrealizedPL >= 0 and losingtrades > 2:
+                    print(f'closing {p.instrument}: too many negative trades')
+                    if ps.units > 0:
+                        cfg.ctx.position.close(cfg.ACCOUNT_ID, instrument=p.instrument, longUnits='ALL')
+                    if ps.units < 0:
+                        cfg.ctx.position.close(cfg.ACCOUNT_ID, instrument=p.instrument, shortUnits='ALL')
 
-    def get_position(self, inst):
-        for p in cfg.account.positions:
-            if p.instrument == inst:
-                return p
-
-    def check_trades_for_breakeven(self):
-        if len(cfg.account.trades) > cfg.account.openPositionCount:
-            self.check_positions()
-
-        print('Check trades', len(cfg.account.trades))
+    def check_trades(self):
         for t in cfg.account.trades:
             pip_pl = self.get_pip_pl(t.instrument, t.currentUnits, t.price)
             # trade still in loss
             if t.unrealizedPL <= 0:
-                self.print_trade(t, 'TNEG', pip_pl)
+                # self.print_trade(t, 'TNEG', pip_pl)
                 continue
             # trade already in B/E > check to add
             if self.is_be(t, u.get_order_by_id(t.stopLossOrderID)):
@@ -65,7 +80,69 @@ class Trader():
                     sl_price = t.price - be_sl
                 self.set_stoploss(t.id, sl_price, t.instrument)
 
-            # self.print_trade(t, 'NOBE', pip_pl)
+    def check_instruments(self):
+        for i in cfg.resort_instruments():
+            if 'spread' not in cfg.instruments[i]:
+                continue
+            position = self.get_trades_by_instrument(cfg.account.trades, i)
+            if len(position) == 0:
+                self.check_instrument(i)
+            elif self.check_breakeven_for_position(cfg.account.trades, i):
+                # print('possible scale in', i)
+                pos = 1 if position[0].currentUnits > 0 else -1
+                self.check_instrument(i, pos)
+            if not Trader.is_trade_allowed():
+                return
+
+    def check_breakeven_for_position(self, trades, instrument):
+        all_be = []
+        for t in trades:
+            if t.instrument == instrument:
+                for o in cfg.account.orders:
+                    if o.id == t.stopLossOrderID:
+                        all_be.append(
+                            (t.currentUnits > 0 and o.price >= t.price)
+                            or
+                            (t.currentUnits < 0 and o.price <= t.price))
+        return all(all_be)
+
+    def check_instrument(self, inst: str, positioning: int = 0) -> str:
+        # print(f'{u.get_now()} {inst} pos: {positioning}')
+        signal = quant.Quant().get_signal(inst, 15, 'M5', positioning)
+        valid = [(-1, -1), (-1, 0), (1, 0), (1, 1)]
+        if (signal['signal'], positioning) not in valid:
+            return None
+        #
+        sl = cfg.global_params['sl']
+        tp = cfg.global_params['tp']
+        units = int(cfg.account.marginAvailable/100) * signal['signal']
+        #
+        ask = cfg.instruments[inst]['ask']
+        bid = cfg.instruments[inst]['bid']
+        spread = cfg.instruments[inst]['spread']
+        piploc = pow(10, cfg.get_piploc(inst))
+        #
+        spread_piploc = spread / piploc
+        # print(f'{u.get_now()} SPRD: {inst} {spread} {spread_piploc:.1f}')
+        if spread_piploc > cfg.global_params['max_spread']:
+            return
+        #
+        entry = ask if signal['signal'] == 1 else bid
+        stopprice = entry - signal['signal'] * sl * piploc
+        profitPrice = entry + signal['signal'] * tp * piploc
+        #
+        msg = (f'{u.get_now()} OPEN {signal["signaltype"]} {inst}'
+               f' {units}'
+               f' {entry:.5f}'
+               #    f' SL:{stopprice:.5f}'
+               #    f' TP:{profitPrice:>9.5f}'
+               #    f' A:{ask:>8.5f}/B:{bid:<8.5f}'
+               f' {spread:>6.5f}')
+        print(msg)
+        self.place_market(inst, units, stopprice, profitPrice, 'S3', signal['ts_dist'])
+        # threading.Thread(
+        #     target=self.place_market,
+        #     args=[inst, units, stopprice, profitPrice, signal['signaltype'], signal['ts_dist']]).start()
 
     def get_distance_from_sl(self, trade: v20.trade):
         sl = u.get_order_by_id(trade.stopLossOrderID)
@@ -96,32 +173,6 @@ class Trader():
                 pl = t.unrealizedPL
                 inst = t.instrument
         return inst
-
-    def check_breakeven_for_position(self, trades, instrument):
-        all_be = []
-        for t in trades:
-            if t.instrument == instrument:
-                for o in cfg.account.orders:
-                    if o.id == t.stopLossOrderID:
-                        all_be.append(
-                            (t.currentUnits > 0 and o.price >= t.price)
-                            or
-                            (t.currentUnits < 0 and o.price <= t.price))
-        return all(all_be)
-
-    def check_instruments(self):
-        for i in cfg.resort_instruments():
-            if 'spread' not in cfg.instruments[i]:
-                continue
-            position = self.get_trades_by_instrument(cfg.account.trades, i)
-            if len(position) == 0:
-                self.check_instrument(i)
-            elif self.check_breakeven_for_position(cfg.account.trades, i):
-                print('possible scale in', i)
-                pos = 1 if position[0].currentUnits > 0 else -1
-                self.check_instrument(i, pos)
-            if not Trader.is_trade_allowed():
-                return
 
     def get_trades_by_instrument(self, trades, instrument):
         inst_trades = []
@@ -158,45 +209,6 @@ class Trader():
                     f'{t.instrument} in loss {t.unrealizedPL} wait.')
                 return False
         return True
-
-    def check_instrument(self, inst: str, positioning: int = 0) -> str:
-        # print(f'{u.get_now()} {inst} pos: {positioning}')
-
-        signal = quant.Quant().get_signal(inst, 15, 'M5', positioning)
-        valid = [(-1, -1), (-1, 0), (1, 0), (1, 1)]
-        if (signal['signal'], positioning) not in valid:
-            return None
-
-        sl = cfg.global_params['sl']
-        tp = cfg.global_params['tp']
-        units = int(cfg.account.marginAvailable/100) * signal['signal']
-
-        ask = cfg.instruments[inst]['ask']
-        bid = cfg.instruments[inst]['bid']
-        spread = cfg.instruments[inst]['spread']
-        piploc = pow(10, cfg.get_piploc(inst))
-
-        spread_piploc = spread / piploc
-        # print(f'{u.get_now()} SPRD: {inst} {spread} {spread_piploc:.1f}')
-        if spread_piploc > cfg.global_params['max_spread']:
-            return
-
-        entry = ask if signal['signal'] == 1 else bid
-        stopprice = entry - signal['signal'] * sl * piploc
-        profitPrice = entry + signal['signal'] * tp * piploc
-
-        msg = (f'{u.get_now()} OPEN {signal["signaltype"]} {inst}'
-               f' {units}'
-               f' {entry:.5f}'
-               #    f' SL:{stopprice:.5f}'
-               #    f' TP:{profitPrice:>9.5f}'
-               #    f' A:{ask:>8.5f}/B:{bid:<8.5f}'
-               f' {spread:>6.5f}')
-        print(msg)
-        self.place_market(inst, units, stopprice, profitPrice, 'S3', signal['ts_dist'])
-        # threading.Thread(
-        #     target=self.place_market,
-        #     args=[inst, units, stopprice, profitPrice, signal['signaltype'], signal['ts_dist']]).start()
 
     def place_market(self, inst, units, stopPrice, profitPrice=None, signaltype='0', ts_dist=0):
         prec = cfg.instruments[inst]['displayPrecision']
@@ -293,6 +305,11 @@ class Trader():
                 else:
                     print(u.get_now(), 'Close trade without stop')
                     self.close_trade(t)
+
+    def get_position(self, inst):
+        for p in cfg.account.positions:
+            if p.instrument == inst:
+                return p
 
 
 if __name__ == '__main__':

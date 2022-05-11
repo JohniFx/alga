@@ -177,8 +177,10 @@ class Quant():
 
         df = self.get_candles(inst, count, tf)
         if df.volume.iloc[-2:].mean() < 100:
-            # print(f'{inst} low volume: {df.volume.iloc[-2:].mean():.2f}')
-            return 0, 'LV'
+            print(f'{inst} low volume: {df.volume.iloc[-2:].mean():.2f}')
+            signal = dict(signal=0, signaltype='LV')
+            return signal
+
         self.add_hilo(df)
         self.add_mom(df)
         self.add_kpi(df, inst)
@@ -211,8 +213,8 @@ class Quant():
         df['s4'] = np.where(cd1, 1, 0)
         df['s4'] = np.where(cd2, -1, df['s4'])
         s4 = df.s4.iloc[-1]
-
-        print(f'{u.get_now()} SGNL: {inst} P:{positioning} S3:{s3} LR:{df.lr_slope.iloc[-1]}')
+        if s3 != 0:
+            print(f'{u.get_now()} SGNL: {inst} P:{positioning} S3:{s3} LR:{df.lr_slope.iloc[-1]}')
 
         signal = dict(
             inst=inst,
