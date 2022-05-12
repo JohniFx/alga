@@ -54,14 +54,18 @@ class Trader():
                         cfg.ctx.position.close(cfg.ACCOUNT_ID, instrument=p.instrument, longUnits='ALL')
                     if ps.units < 0:
                         cfg.ctx.position.close(cfg.ACCOUNT_ID, instrument=p.instrument, shortUnits='ALL')
+# TODO: pozi add ezt befejezni
+            # if self.check_breakeven_for_position(cfg.account.trades, i):
+            #     # print('possible scale in', i)
+            #     pos = 1 if position[0].currentUnits > 0 else -1
+            #     self.check_instrument(i, pos)
 
     def check_trades(self):
         for t in cfg.account.trades:
-            pip_pl = self.get_pip_pl(t.instrument, t.currentUnits, t.price)
-            # trade still in loss
             if t.unrealizedPL <= 0:
-                # self.print_trade(t, 'TNEG', pip_pl)
                 continue
+            #
+            pip_pl = self.get_pip_pl(t.instrument, t.currentUnits, t.price)
             # trade already in B/E > check to add
             if self.is_be(t, u.get_order_by_id(t.stopLossOrderID)):
                 self.print_trade(t, 'B/E+', pip_pl)
@@ -81,18 +85,14 @@ class Trader():
                 self.set_stoploss(t.id, sl_price, t.instrument)
 
     def check_instruments(self):
+        if not Trader.is_trade_allowed():
+            return
         for i in cfg.resort_instruments():
             if 'spread' not in cfg.instruments[i]:
                 continue
-            position = self.get_trades_by_instrument(cfg.account.trades, i)
-            if len(position) == 0:
-                self.check_instrument(i)
-            elif self.check_breakeven_for_position(cfg.account.trades, i):
-                # print('possible scale in', i)
-                pos = 1 if position[0].currentUnits > 0 else -1
-                self.check_instrument(i, pos)
-            if not Trader.is_trade_allowed():
-                return
+            trades = cfg.ctx.trade.list(cfg.ACCOUNT_ID, instrument=i).get('trades')
+            if len(trades) == 0:
+                self.check_instrument(i, 0)
 
     def check_breakeven_for_position(self, trades, instrument):
         all_be = []
