@@ -38,14 +38,14 @@ class Trader():
             if p.short.units < 0 and len(p.short.tradeIDs) > 1:
                 ps = p.short
             if ps is not None:
-                print(f'{p.instrument} pl:{p.unrealizedPL:<5.2f} ap:{ps.averagePrice:>10.5f} units:{ps.units:>6.0f}  t:{len(ps.tradeIDs)}')
+                print(f'{p.instrument} pl:{p.unrealizedPL:<5.2f} ap:{ps.averagePrice:>10.5f}')
                 #
                 trades = cfg.ctx.trade.list(accountID=cfg.ACCOUNT_ID, instrument=p.instrument).get('trades')
                 trades = sorted(trades, key=lambda trade: trade.unrealizedPL, reverse=False)
                 #
                 losingtrades = 0
                 for t in trades:
-                    print(f'\t{t.id} {t.instrument} {t.currentUnits:.0f} {t.unrealizedPL:>7.4f} {t.price:>8.4f} sl:{t.stopLossOrder.price:>8.5f}')
+                    print(f'\t{t.id} {t.currentUnits:.0f} {t.unrealizedPL:>7.4f} {t.price:>8.4f} sl:{t.stopLossOrder.price:>8.4f}')
                     if t.unrealizedPL < 0:
                         losingtrades += 1
                 if p.unrealizedPL >= 0 and losingtrades > 2:
@@ -87,7 +87,7 @@ class Trader():
     def check_instruments(self):
         if not Trader.is_trade_allowed():
             return
-        for i in cfg.resort_instruments():
+        for i in cfg.tradeable_instruments:
             if 'spread' not in cfg.instruments[i]:
                 continue
             trades = cfg.ctx.trade.list(cfg.ACCOUNT_ID, instrument=i).get('trades')

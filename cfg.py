@@ -61,24 +61,6 @@ tradeable_instruments = [
     'USD_CHF', 'USD_CAD', 'USD_JPY']
 
 
-def resort_instruments():
-    ti = tradeable_instruments
-    if len(account.positions) == 0:
-        return tradeable_instruments
-    trade_dict = []
-    for t in account.positions:
-        trade_dict.append(t.dict())
-    i = 0
-    for n in sorted(trade_dict, key=lambda d: d['unrealizedPL']):
-        if 'marginUsed' in n.keys() and float(n['unrealizedPL']) > 0:
-            i += 1
-            ti.insert(0, ti.pop(ti.index(n['instrument'])))
-    if len(account.trades) > 0:
-        l = min([len(account.trades), 5])
-        # print(f'{u.get_now()}', ti[:l])
-    return ti
-
-
 # observers
 price_observers = []
 transaction_observers = []
