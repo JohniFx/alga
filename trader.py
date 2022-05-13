@@ -70,6 +70,9 @@ class Trader():
                 continue
             #
             pip_pl = self.get_pip_pl(t.instrument, t.currentUnits, t.price)
+            if pip_pl is None:
+                return
+            #
             # trade already in B/E > check to add
             if self.is_be(t, u.get_order_by_id(t.stopLossOrderID)):
                 self.print_trade(t, 'B/E+', pip_pl)
@@ -119,7 +122,11 @@ class Trader():
         tp = cfg.global_params['tp']
         units = int(cfg.account.marginAvailable/100) * signal['signal']
         #
-        ask = cfg.instruments[inst]['ask']
+        try:
+            ask = cfg.instruments[inst]['ask']
+        except KeyError as k:
+            print(inst, positioning, k)
+            return
         bid = cfg.instruments[inst]['bid']
         spread = cfg.instruments[inst]['spread']
         piploc = pow(10, cfg.get_piploc(inst))
@@ -191,10 +198,14 @@ class Trader():
               f'{pip_pl:>5.2f}')
 
     def get_pip_pl(self, inst: str, cu: int, price: float) -> float:
-        if cu > 0:
-            pip = cfg.instruments[inst]['bid'] - price
-        if cu < 0:
-            pip = price - cfg.instruments[inst]['ask']
+        try:
+            if cu > 0:
+                pip = cfg.instruments[inst]['bid'] - price
+            if cu < 0:
+                pip = price - cfg.instruments[inst]['ask']
+        except KeyError as ke:
+            print('keyerror:', inst, ke)
+            return None
         return pip / pow(10, cfg.get_piploc(inst))
 
     @ staticmethod

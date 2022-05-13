@@ -178,6 +178,8 @@ class Quant():
         df = self.get_candles(inst, count, tf)
         if df.volume.iloc[-2:].mean() < 100:
             print(f'{inst} low volume: {df.volume.iloc[-2:].mean():.2f}')
+            print(f'{inst} REMOVED FROM INSTRUMENTLIST DUE TO LOW VOLUME')
+            cfg.tradeable_instruments.remove(inst)
             signal = dict(signal=0, signaltype='LV')
             return signal
 
