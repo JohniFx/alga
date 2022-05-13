@@ -141,7 +141,9 @@ def run_price_stream(tradeable_instruments: list):
     except ValueError as e:
         print('ValueError in pricestream', e)
     except Exception as e:
-        print('Exception in price stream', e)
+        print('Exception in price stream, RESTART', e)
+        time.sleep(5)
+        restart()
 
 
 def run_transaction_stream():
@@ -152,8 +154,8 @@ def run_transaction_stream():
             if d.type != "HEARTBEAT":
                 notify_transaction_observers(d)
     except Exception as e:
-        print('Transaction stream crashed. initiate restart')
-        print(e)
+        print('Transaction stream crashed. RESTART',e)
+        time.sleep(5)
         restart()
 
 

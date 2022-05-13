@@ -30,8 +30,9 @@ class Main():
             time.sleep(60*30)
 
     def run_check_instruments(self, n=120):
-        for i in range(10):
-            print(f'\n{u.get_now()} ITER: {i}')
+        iters=15
+        for i in range(iters):
+            print(f'\n{u.get_now()} ITER: {i} of {iters}')
             t = trader.Trader()
             threading.Thread(target=t.do_trading).start()
             hour = datetime.now().hour

@@ -28,7 +28,7 @@ class Trader():
         if len(cfg.account.trades) < cfg.account.openPositionCount:
             return
         #
-        positions = cfg.ctx.position.list_open(accountID=cfg.ACCOUNT_ID).get('positions')
+        positions = cfg.ctx.position.list_open(cfg.ACCOUNT_ID).get('positions')
         positions = sorted(positions, key=lambda position: position.unrealizedPL, reverse=True)
         #
         for p in positions:
@@ -42,10 +42,11 @@ class Trader():
                 #
                 trades = cfg.ctx.trade.list(accountID=cfg.ACCOUNT_ID, instrument=p.instrument).get('trades')
                 trades = sorted(trades, key=lambda trade: trade.unrealizedPL, reverse=False)
-                #
+                # TODO: ezeket a szabályokat külön metodusba
+                ## Close position if too many negative trades
                 losingtrades = 0
                 for t in trades:
-                    print(f'\t{t.id} {t.currentUnits:.0f} {t.unrealizedPL:>7.4f} {t.price:>8.4f} sl:{t.stopLossOrder.price:>8.4f}')
+                    print(f'\t {t.currentUnits:.0f}@{t.price:>8.4f} pl:{t.unrealizedPL:>7.4f} sl:{t.stopLossOrder.price:>8.4f}')
                     if t.unrealizedPL < 0:
                         losingtrades += 1
                 if p.unrealizedPL >= 0 and losingtrades > 2:
@@ -54,11 +55,14 @@ class Trader():
                         cfg.ctx.position.close(cfg.ACCOUNT_ID, instrument=p.instrument, longUnits='ALL')
                     if ps.units < 0:
                         cfg.ctx.position.close(cfg.ACCOUNT_ID, instrument=p.instrument, shortUnits='ALL')
-# TODO: pozi add ezt befejezni
-            # if self.check_breakeven_for_position(cfg.account.trades, i):
-            #     # print('possible scale in', i)
-            #     pos = 1 if position[0].currentUnits > 0 else -1
-            #     self.check_instrument(i, pos)
+                #
+                # TODO: move all trades stop to position level breakeven
+                #
+                ## Scale in new trades
+                if self.check_breakeven_for_position(cfg.account.trades, p.instrument):
+                    print('Possible scale in', i)
+                    pos = 1 if ps.units > 0 else -1
+                    self.check_instrument(i, pos)
 
     def check_trades(self):
         for t in cfg.account.trades:
@@ -88,8 +92,6 @@ class Trader():
         if not Trader.is_trade_allowed():
             return
         for i in cfg.tradeable_instruments:
-            if 'spread' not in cfg.instruments[i]:
-                continue
             trades = cfg.ctx.trade.list(cfg.ACCOUNT_ID, instrument=i).get('trades')
             if len(trades) == 0:
                 self.check_instrument(i, 0)
@@ -165,7 +167,7 @@ class Trader():
         return True if c1 or c2 else False
 
     @staticmethod
-    def get_max_instrument():
+    def DEL_get_max_instrument():
         pl = 0
         inst = 'EUR_USD'
         for t in cfg.account.trades:
