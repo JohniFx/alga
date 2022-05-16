@@ -88,6 +88,7 @@ class Main():
                 return
 
     def on_account_changes(self):
+        print('account updated')
         pass
 
     def update_stats(self, data):

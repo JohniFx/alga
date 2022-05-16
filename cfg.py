@@ -80,10 +80,10 @@ account_observers = []
 # TODO: kivinni jsonba és minden loopban ujratölteni
 global_params = dict(
     tp=35,
-    sl=15,
-    ts=20,
+    sl=13,
+    ts=15,
     max_spread=3,
-    be_pips=11,
+    be_p5ps=11,
     be_sl=2)
 
 
@@ -205,7 +205,6 @@ def update_trades(account, state):
 
 def update_fields(account, state):
     for field in state.fields():
-        print(f'{field.name} {field.value}')
         update_attribute(account, field.name, field.value)
 
 
@@ -293,7 +292,6 @@ def apply_changes(account, changes: AccountChanges):
 
 
 def update_account(account, changes, state):
-    print('applying changes on account', f'{account.NAV} {account.balance}')
     apply_changes(account, changes)
     update_fields(account, state)
     update_trades(account, state)

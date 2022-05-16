@@ -229,10 +229,7 @@ class Trader():
         #
         for t in cfg.account.trades:
             if t.unrealizedPL <= 0:
-                print(
-                    f'{u.get_now()} RULE: #{t.id:>5}',
-                    f'{t.currentUnits:>5.0f}',
-                    f'{t.instrument} in loss {t.unrealizedPL} wait.')
+                print(f'{u.get_now()} RULE: at least one trade is in loss.')
                 return False
         return True
 
