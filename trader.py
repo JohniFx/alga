@@ -85,14 +85,14 @@ class Trader():
                     self.print_trade(t, 'MOSL', pip_pl)
                     d_sl = self.get_distance_from_sl(t)
                     r = pip_pl/cfg.global_params['be_pips']
-                    print(f' {t.instrument} distance from sl: {d_sl:.5f}, ratio: {r:.3f}')
                     self.move_stop(t, pip_pl, r)
                 # try to add
                 if self.get_position(t.instrument).unrealizedPL > 0:
                     # TODO: ez csak egyszer fusson le instrumentumonként!
-                    self.print_trade(t, 'ADDD', pip_pl)
-                    pos = 1 if t.currentUnits > 0 else -1
-                    self.check_instrument(t.instrument, pos)
+                    if self.is_trade_allowed():
+                        self.print_trade(t, 'ADDD', pip_pl)
+                        pos = 1 if t.currentUnits > 0 else -1
+                        self.check_instrument(t.instrument, pos)
                 continue
             # trade green but not yet b/e
             if pip_pl > cfg.global_params['be_pips']:
@@ -100,7 +100,7 @@ class Trader():
                 self.move_stop(t, pip_pl)
 
     def check_instruments(self):
-        if not Trader.is_trade_allowed():
+        if not self.is_trade_allowed():
             return
         # flat instruments only
         for i in cfg.tradeable_instruments:
@@ -222,8 +222,7 @@ class Trader():
             return None
         return pip / pow(10, cfg.get_piploc(inst))
 
-    @ staticmethod
-    def is_trade_allowed() -> bool:
+    def is_trade_allowed(self) -> bool:
         h = datetime.datetime.now().hour
         if 6 < h < 21:
             return True
@@ -258,8 +257,11 @@ class Trader():
             trailingStopLossOnFill=ts_on_fill
         )
         response = cfg.ctx.order.market(cfg.ACCOUNT_ID, **order)
-        id = response.get('orderFillTransaction').id
-        return id
+        try:
+            id = response.get('orderFillTransaction').id
+        except v20.errors.ResponseNoField as x:
+            print(x)
+            print(response)
 
     def place_limit(self, inst, units, entryPrice, stopPrice, profitPrice):
         prec = cfg.instruments[inst]['displayPrecision']

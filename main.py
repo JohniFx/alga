@@ -57,8 +57,7 @@ class Main():
 
         if data.type == 'ORDER_FILL' and data.reason == 'STOP_LOSS_ORDER':
             if data.pl < 0:
-                print(f'CLOSING LOSS:{data.pl} >> close a winning side too')
-            self.close_similar_trade(-1 * data.pl)
+                self.close_similar_trade(abs(data.pl))
 
         types = ['ORDER_CANCEL', 'MARKET_ORDER']
         reasons = ['ON_FILL']

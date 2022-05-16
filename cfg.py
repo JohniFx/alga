@@ -60,20 +60,24 @@ tradeable_instruments = [
     'NZD_USD', 'NZD_JPY',
     'USD_CHF', 'USD_CAD', 'USD_JPY']
 
+
 def get_tradeable_instruments():
     # load
     # return
     pass
 
+
 def set_tradeable_instruments():
     # save changes
     pass
+
 
 # observers
 price_observers = []
 transaction_observers = []
 account_observers = []
 
+# TODO: kivinni jsonba és minden loopban ujratölteni
 global_params = dict(
     tp=35,
     sl=15,
@@ -162,7 +166,7 @@ def run_transaction_stream():
             if d.type != "HEARTBEAT":
                 notify_transaction_observers(d)
     except Exception as e:
-        print('Transaction stream crashed. RESTART',e)
+        print('Transaction stream crashed. RESTART', e)
         time.sleep(5)
         restart()
 
@@ -201,7 +205,15 @@ def update_trades(account, state):
 
 def update_fields(account, state):
     for field in state.fields():
+        print(f'{field.name} {field.value}')
         update_attribute(account, field.name, field.value)
+
+
+def update_attribute(dest, name, value):
+    if name in ('orders', 'trades', 'positions'):
+        return
+    if hasattr(dest, name) and getattr(dest, name) is not None:
+        setattr(dest, name, value)
 
 
 def update_positions(account, state):
@@ -280,15 +292,8 @@ def apply_changes(account, changes: AccountChanges):
                 account.orders.remove(o)
 
 
-def update_attribute(dest, name, value):
-    if name in ('orders', 'trades', 'positions'):
-        return
-    if hasattr(dest, name) and getattr(dest, name) is not None:
-        setattr(dest, name, value)
-
-
 def update_account(account, changes, state):
-  #  print('applying changes on account',f'{account.NAV}')
+    print('applying changes on account', f'{account.NAV} {account.balance}')
     apply_changes(account, changes)
     update_fields(account, state)
     update_trades(account, state)
@@ -299,7 +304,8 @@ def update_account(account, changes, state):
 def print_account():
     ac = account
     print(f"{u.get_now()}",
-          f"NAV :{float(ac.NAV):>7.2f}",
+          f"BAL: {float(ac.balance):7.0f}",
+          f"NAV: {float(ac.NAV):>7.2f}",
           f"pl:{float(ac.unrealizedPL):>6.2f}",
           f"t:{ac.openTradeCount}",
           f"o:{ac.pendingOrderCount}",
