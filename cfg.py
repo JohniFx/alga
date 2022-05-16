@@ -60,6 +60,14 @@ tradeable_instruments = [
     'NZD_USD', 'NZD_JPY',
     'USD_CHF', 'USD_CAD', 'USD_JPY']
 
+def get_tradeable_instruments():
+    # load
+    # return
+    pass
+
+def set_tradeable_instruments():
+    # save changes
+    pass
 
 # observers
 price_observers = []

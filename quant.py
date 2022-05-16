@@ -189,11 +189,15 @@ class Quant():
         self.add_stochastic(df)
 
         # Strategy1
-        cd1 = (df.hilo > 0) & (df.mom_pos > 0) & (df.mom_slope > 0) & (df.lr_slope > 0)
-        cd2 = (df.hilo < 0) & (df.mom_pos < 0) & (df.mom_slope < 0) & (df.lr_slope < 0)
-        df['s1'] = np.where(cd1, 1, 0)
-        df['s1'] = np.where(cd2, -1, df['s1'])
-        s1 = df.s1.iloc[-1]
+        try:
+            cd1 = (df.hilo > 0) & (df.mom_pos > 0) & (df.mom_slope > 0) & (df.lr_slope > 0)
+            cd2 = (df.hilo < 0) & (df.mom_pos < 0) & (df.mom_slope < 0) & (df.lr_slope < 0)
+            df['s1'] = np.where(cd1, 1, 0)
+            df['s1'] = np.where(cd2, -1, df['s1'])
+            s1 = df.s1.iloc[-1]
+        except AttributeError as e:
+            print(f'{inst}, {e}')
+            return None
 
         # Strategy2
         c1 = (df.mom < df.mom_q05) & (df.mom_slope > 0) & (df.mom_slope.shift(1) > 0)
@@ -215,8 +219,6 @@ class Quant():
         df['s4'] = np.where(cd1, 1, 0)
         df['s4'] = np.where(cd2, -1, df['s4'])
         s4 = df.s4.iloc[-1]
-        if s3 != 0:
-            print(f'{u.get_now()} SGNL: {inst} P:{positioning} S3:{s3} LR:{df.lr_slope.iloc[-1]}')
 
         signal = dict(
             inst=inst,

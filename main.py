@@ -30,7 +30,7 @@ class Main():
             time.sleep(60*30)
 
     def run_check_instruments(self, n=120):
-        iters=35
+        iters = 35
         for i in range(iters):
             print(f'\n{u.get_now()} ITER: {i} of {iters}')
             t = trader.Trader()
@@ -55,6 +55,11 @@ class Main():
         if data.type == 'MARKET_ORDER_REJECT':
             print(data)
 
+        if data.type == 'ORDER_FILL' and data.reason == 'STOP_LOSS_ORDER':
+            if data.pl < 0:
+                print(f'CLOSING LOSS:{data.pl} >> close a winning side too')
+            self.close_similar_trade(-1 * data.pl)
+
         types = ['ORDER_CANCEL', 'MARKET_ORDER']
         reasons = ['ON_FILL']
         if (data.type in types) or (data.reason in reasons):
@@ -74,8 +79,14 @@ class Main():
             'MARKET_ORDER_POSITION_CLOSEOUT']
 
         if data.reason in reasons_detailed:
-            msg += f" {data.units:.0f} PL:{data.pl}, cost:{data.halfSpreadCost}"
+            msg += f" {data.units:.0f} PL:{data.pl}"
         print(msg)
+
+    def close_similar_trade(self, pl_value):
+        for t in cfg.account.trades:
+            if t.unrealizedPL > pl_value:
+                cfg.ctx.trade.close(cfg.ACCOUNT_ID, t.id, units='ALL')
+                return
 
     def on_account_changes(self):
         pass
