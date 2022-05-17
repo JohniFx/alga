@@ -7,11 +7,12 @@ import time
 from datetime import datetime
 import utils as u
 import json
-__version__ = '2022-03-16'
+__version__ = '2022-05-17'
 
 
 class Main():
     def __init__(self) -> None:
+        cfg.main()
         cfg.price_observers.append(self)
         cfg.transaction_observers.append(self)
         cfg.account_observers.append(self)
@@ -30,7 +31,7 @@ class Main():
             time.sleep(60*30)
 
     def run_check_instruments(self, n=120):
-        iters = 10
+        iters = 30
         for i in range(iters):
             print(f'\n{u.get_now()} ITER: {i} of {iters}')
             t = trader.Trader()
@@ -53,9 +54,12 @@ class Main():
             print(data)
 
         if data.type == 'MARKET_ORDER_REJECT':
-            print(data)
+            print(data.type, data.tradeClose.tradeID)
 
         if data.type == 'ORDER_FILL' and data.reason == 'STOP_LOSS_ORDER':
+            if data.pl < 0:
+                self.close_similar_trade(abs(data.pl))
+        if data.type == 'ORDER_FILL' and data.reason == 'TRAILING_STOP_LOSS_ORDER':
             if data.pl < 0:
                 self.close_similar_trade(abs(data.pl))
 
@@ -83,10 +87,25 @@ class Main():
 
     def close_similar_trade(self, pl_value):
         for t in cfg.account.trades:
+            # single trade
             if t.unrealizedPL > pl_value:
                 cfg.ctx.trade.close(cfg.ACCOUNT_ID, t.id, units='ALL')
                 return
-        print('NO replacement winning trade')
+        # multiple trades
+        sum_unrealized = 0
+        trade_ids = []
+        trades = []
+        for t in cfg.account.trades:
+            if t.unrealizedPL > 0:
+                trade_ids.append(t.id)
+                trades.append(t)
+                sum_unrealized += t.unrealizedPL
+                if sum_unrealized > pl_value:
+                    for trada in trades:
+                        cfg.ctx.trade.close(cfg.ACCOUNT_ID, trada.id, units='ALL')
+                    return
+
+        print('NO replacement winning trade(s)')
 
     def on_account_changes(self):
         pass

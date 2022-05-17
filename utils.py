@@ -58,21 +58,24 @@ def get_position_info(p):
     return msg
 
 
-def get_trade_by_id(tradeid:int) -> v20.trade.TradeSummary:
+def get_trade_by_id(tradeid: int) -> v20.trade.TradeSummary:
     for t in cfg.account.trades:
         if t.id == tradeid:
             return t
 
 
-def get_order_by_id(orderid:int):
+def get_order_by_id(orderid: int) -> v20.order.Order:
+    # itt cfg.account.order is a v20.trade.TradeSummary
     for o in cfg.account.orders:
         if o.id == orderid:
             return o
 
 
-def get_position_tradeIDs(inst:str) -> list:
+def get_position_tradeIDs(inst: str) -> list:
     for p in cfg.account.positions:
         if p.instrument == inst:
-            if p.long.tradeIDs : return p.long.tradeIDs
-            if p.short.tradeIDs: return p.short.tradeIDs
+            if p.long.tradeIDs:
+                return p.long.tradeIDs
+            if p.short.tradeIDs:
+                return p.short.tradeIDs
     return None

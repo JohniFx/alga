@@ -48,7 +48,7 @@ class Trader():
                 # TODO: move all trades stop to position level breakeven
                 #
                 # Scale in new trades
-                if self.check_breakeven_for_position(cfg.account.trades, p.instrument):
+                if self.check_breakeven_for_position(p.instrument):
                     print('Possible position scale in', p.instrument)
                     pos = 1 if ps.units > 0 else -1
                     self.check_instrument(p.instrument, pos)
@@ -77,13 +77,12 @@ class Trader():
             pip_pl = self.get_pip_pl(t.instrument, t.currentUnits, t.price)
             if pip_pl is None:
                 return
-            #
             # trade already in B/E
-            if self.is_be(t, u.get_order_by_id(t.stopLossOrder.id)):
+            if self.is_be(t):
                 # move stop
                 if (pip_pl // cfg.global_params['be_pips']) > 1:
                     self.print_trade(t, 'MOSL', pip_pl)
-                    d_sl = self.get_distance_from_sl(t)
+                    # d_sl = self.get_distance_from_sl(t)
                     r = pip_pl/cfg.global_params['be_pips']
                     self.move_stop(t, pip_pl, r)
                 # try to add
@@ -115,16 +114,17 @@ class Trader():
             sl_price = t.price - be_sl
         self.set_stoploss(t.id, sl_price, t.instrument)
 
-    def check_breakeven_for_position(self, trades, instrument):
+    def check_breakeven_for_position(self, instrument: str) -> bool:
         all_be = []
+        trades = cfg.ctx.trade.list(cfg.ACCOUNT_ID, instrument=instrument).get('trades')
         for t in trades:
-            if t.instrument == instrument:
-                for o in cfg.account.orders:
-                    if o.id == t.stopLossOrderID:
-                        all_be.append(
-                            (t.currentUnits > 0 and o.price >= t.price)
-                            or
-                            (t.currentUnits < 0 and o.price <= t.price))
+            if t.currentUnits > 0 and t.stopLossOrder.price > t.price:
+                all_be.append(True)
+                continue
+            if t.currentUnits < 0 and t.stopLossOrder.price < t.price:
+                all_be.append(True)
+                continue
+            all_be.append(False)
         return all(all_be)
 
     def check_instrument(self, inst: str, positioning: int = 0) -> str:
@@ -161,17 +161,11 @@ class Trader():
         msg = (f'{u.get_now()} OPEN {signal["signaltype"]} {inst}'
                f' {units}'
                f' {entry:.5f}'
-               #    f' SL:{stopprice:.5f}'
-               #    f' TP:{profitPrice:>9.5f}'
-               #    f' A:{ask:>8.5f}/B:{bid:<8.5f}'
                f' {spread:>6.5f}')
         print(msg)
         self.place_market(inst, units, stopprice, profitPrice, 'S3', signal['ts_dist'])
-        # threading.Thread(
-        #     target=self.place_market,
-        #     args=[inst, units, stopprice, profitPrice, signal['signaltype'], signal['ts_dist']]).start()
 
-    def get_distance_from_sl(self, trade: v20.trade):
+    def get_distance_from_sl(self, trade: v20.trade.Trade):
         sl = u.get_order_by_id(trade.stopLossOrder.id)
         bid = cfg.instruments[trade.instrument]['bid']
         ask = cfg.instruments[trade.instrument]['ask']
@@ -181,12 +175,12 @@ class Trader():
             dist_from_sl = sl.price - ask
         return dist_from_sl
 
-    def is_be(self, t, sl):
-        c1 = t.currentUnits > 0 and sl.price >= t.price
-        c2 = t.currentUnits < 0 and sl.price <= t.price
+    def is_be(self, t: v20.trade.Trade) -> bool:
+        c1 = t.currentUnits > 0 and t.stopLossOrder.price >= t.price
+        c2 = t.currentUnits < 0 and t.stopLossOrder.price <= t.price
         return True if c1 or c2 else False
 
-    @staticmethod
+    @ staticmethod
     def DEL_get_max_instrument():
         pl = 0
         inst = 'EUR_USD'
@@ -219,6 +213,7 @@ class Trader():
                 pip = price - cfg.instruments[inst]['ask']
         except KeyError as ke:
             print('keyerror:', inst, ke)
+            print(cfg.instruments[inst])
             return None
         return pip / pow(10, cfg.get_piploc(inst))
 
@@ -305,6 +300,8 @@ class Trader():
 
     def check_before_stopmove(self, tradeid: int, new_sl: float):
         t = u.get_trade_by_id(tradeid)
+        if t is None:
+            return False
         sl = u.get_order_by_id(t.stopLossOrderID)
         if t.currentUnits > 0 and sl.price > new_sl:
             # print(f'FAIL: {t.currentUnits}sl.price: {sl.price} > new_sl:{new_sl:.5f}')
