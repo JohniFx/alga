@@ -83,7 +83,7 @@ global_params = dict(
     sl=13,
     ts=15,
     max_spread=3,
-    be_p5ps=11,
+    be_pips=11,
     be_sl=2)
 
 

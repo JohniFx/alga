@@ -30,7 +30,7 @@ class Main():
             time.sleep(60*30)
 
     def run_check_instruments(self, n=120):
-        iters = 35
+        iters = 10
         for i in range(iters):
             print(f'\n{u.get_now()} ITER: {i} of {iters}')
             t = trader.Trader()
@@ -86,6 +86,7 @@ class Main():
             if t.unrealizedPL > pl_value:
                 cfg.ctx.trade.close(cfg.ACCOUNT_ID, t.id, units='ALL')
                 return
+        print('NO replacement winning trade')
 
     def on_account_changes(self):
         pass
