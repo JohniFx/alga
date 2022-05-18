@@ -272,6 +272,16 @@ class Cfg(object):
               f"o:{ac.pendingOrderCount}",
               f"p:{ac.openPositionCount}")
 
+    def get_trade_by_id(self, tradeid: int) -> v20.trade.TradeSummary:
+        for t in self.account.trades:
+            if t.id == tradeid:
+                return t
+
+    def get_order_by_id(self, orderid: int) -> v20.order.Order:
+        for o in self.account.orders:
+            if o.id == orderid:
+                return o
+
 
 if __name__ == '__main__':
     c = Cfg()

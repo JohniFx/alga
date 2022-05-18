@@ -107,7 +107,7 @@ class Trader():
                 self.check_instrument(i, 0)
 
     def move_stop(self, t, pip_pl, r=1):
-        be_sl = r * self.cfg.get_lobal_params()['be_sl'] * pow(10, self.cfg.get_piploc(t.instrument))
+        be_sl = r * self.cfg.get_global_params()['be_sl'] * pow(10, self.cfg.get_piploc(t.instrument))
         if t.currentUnits > 0:
             sl_price = t.price + be_sl
         else:
@@ -289,10 +289,10 @@ class Trader():
             self.cfg.ctx.trade.close(self.cfg.ACCOUNT_ID, trade.id, units=str(units))
 
     def check_before_stopmove(self, tradeid: int, new_sl: float):
-        t = u.get_trade_by_id(tradeid)
+        t = self.cfg.get_trade_by_id(tradeid)
         if t is None:
             return False
-        sl = u.get_order_by_id(t.stopLossOrderID)
+        sl = self.cfg.get_order_by_id(t.stopLossOrderID)
         if t.currentUnits > 0 and sl.price > new_sl:
             # print(f'FAIL: {t.currentUnits}sl.price: {sl.price} > new_sl:{new_sl:.5f}')
             return False

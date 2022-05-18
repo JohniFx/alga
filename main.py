@@ -46,10 +46,10 @@ class Main(Cfg):
         pass
 
     def on_data(self, data):
-        self.update_stats(data)
         if data.type == 'DAILY_FINANCING':
-            print(data)
             return
+
+        self.update_stats(data)
 
         if data.type == 'STOP_LOSS_ORDER_REJECT':
             print(data)
@@ -60,6 +60,7 @@ class Main(Cfg):
         if data.type == 'ORDER_FILL' and data.reason == 'STOP_LOSS_ORDER':
             if data.pl < 0:
                 self.close_similar_trade(abs(data.pl))
+
         if data.type == 'ORDER_FILL' and data.reason == 'TRAILING_STOP_LOSS_ORDER':
             if data.pl < 0:
                 self.close_similar_trade(abs(data.pl))
@@ -73,7 +74,7 @@ class Main(Cfg):
         inst = ''
         if hasattr(data, 'instrument'):
             inst = data.instrument
-        msg += f" {data.id} {data.type}.{data.reason} {inst}"
+        msg += f" {inst} {data.type}.{data.reason} "
 
         reasons_detailed = [
             'TRAILING_STOP_LOSS_ORDER',
