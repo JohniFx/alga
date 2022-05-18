@@ -1,20 +1,17 @@
 import pandas as pd
 import numpy as np
 import json
-import cfg
-import pprint
-import utils as u
 
-__version__ = '2022-01-24'
+__version__ = '2022-05-18'
 
 
 class Quant():
-    def __init__(self) -> None:
-        pass
+    def __init__(self, cfg) -> None:
+        self.cfg = cfg
 
     def get_candles(self, inst, count=15, tf='M5'):
         params = dict(price='MBA', granularity=tf, count=count)
-        candles = cfg.ctx.instrument.candles(inst, **params).get('candles')
+        candles = self.cfg.ctx.instrument.candles(inst, **params).get('candles')
         return pd.DataFrame.from_dict(Quant.get_rows(candles))
 
     @ staticmethod
@@ -31,14 +28,14 @@ class Quant():
             yield(row)
 
     def fetch_data(self, tf='M5', count=100):
-        for inst in cfg.tradeable_instruments:
+        for inst in self.cfg.get_tradeable_instruments():
             df = self.get_candles(inst, count, tf)
             df.to_pickle(f'./data/{inst}_{tf}.pkl')
         # print('data files updated:', tf, count)
 
     def update_kpi_file(self):
         kpi_data = []
-        for inst in cfg.tradeable_instruments:
+        for inst in self.cfg.get_tradeable_instruments():
             kpi_data.append(self.get_kpi_dict(inst=inst, tf='M5'))
 
         with open('kpi_data.json', 'w') as write_file:
@@ -179,7 +176,7 @@ class Quant():
         if df.volume.iloc[-2:].mean() < 100:
             print(f'{inst} low volume: {df.volume.iloc[-2:].mean():.2f}')
             print(f'{inst} REMOVED FROM INSTRUMENTLIST DUE TO LOW VOLUME')
-            cfg.tradeable_instruments.remove(inst)
+            self.cfg.tradeable_instruments.remove(inst)
             signal = dict(signal=0, signaltype='LV')
             return signal
 

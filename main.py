@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import cfg
+from cfg import Cfg
 import trader
 import quant
 import threading
@@ -10,21 +10,22 @@ import json
 __version__ = '2022-05-17'
 
 
-class Main():
+class Main(Cfg):
     def __init__(self) -> None:
-        cfg.main()
-        cfg.price_observers.append(self)
-        cfg.transaction_observers.append(self)
-        cfg.account_observers.append(self)
+        super().__init__()
+
+        self.price_observers.append(self)
+        self.transaction_observers.append(self)
+        self.account_observers.append(self)
         time.sleep(5)
-        self.stats = cfg.create_stats()
-        cfg.print_account()
+        self.stats = self.create_stats()
+        self.print_account()
         threading.Thread(target=self.update_kpi).start()
-        threading.Thread(target=self.run_check_instruments).start()
+        # threading.Thread(target=self.run_check_instruments).start()
 
     def update_kpi(self):
         while True:
-            q = quant.Quant()
+            q = quant.Quant(self)
             q.fetch_data()
             q.fetch_data(tf='D', count='10')
             q.update_kpi_file()
@@ -39,7 +40,7 @@ class Main():
             hour = datetime.now().hour
             n = 300 if hour >= 22 or hour <= 8 else 120
             time.sleep(n)
-        cfg.restart()
+        self.restart()
 
     def on_tick(self, cp):
         pass
@@ -86,23 +87,23 @@ class Main():
         print(msg)
 
     def close_similar_trade(self, pl_value):
-        for t in cfg.account.trades:
+        for t in self.account.trades:
             # single trade
             if t.unrealizedPL > pl_value:
-                cfg.ctx.trade.close(cfg.ACCOUNT_ID, t.id, units='ALL')
+                self.ctx.trade.close(self.ACCOUNT_ID, t.id, units='ALL')
                 return
         # multiple trades
         sum_unrealized = 0
         trade_ids = []
         trades = []
-        for t in cfg.account.trades:
+        for t in self.account.trades:
             if t.unrealizedPL > 0:
                 trade_ids.append(t.id)
                 trades.append(t)
                 sum_unrealized += t.unrealizedPL
                 if sum_unrealized > pl_value:
                     for trada in trades:
-                        cfg.ctx.trade.close(cfg.ACCOUNT_ID, trada.id, units='ALL')
+                        self.trade.close(self.ACCOUNT_ID, trada.id, units='ALL')
                     return
 
         print('NO replacement winning trade(s)')
@@ -125,13 +126,10 @@ class Main():
             self.stats['sum_manual'] += data.pl
         else:
             return
-        cfg.print_stats(self.stats)
+        self.print_stats(self.stats)
         with open('stats.json', 'w') as f:
             json.dump(self.stats, f, indent=2)
 
 
 if __name__ == '__main__':
-    try:
-        m = Main()
-    except KeyboardInterrupt:
-        print('close threads gracefully')
+    m = Main()
