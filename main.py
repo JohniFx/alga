@@ -21,7 +21,7 @@ class Main(Cfg):
         self.stats = self.create_stats()
         self.print_account()
         threading.Thread(target=self.update_kpi).start()
-        # threading.Thread(target=self.run_check_instruments).start()
+        threading.Thread(target=self.run_check_instruments).start()
 
     def update_kpi(self):
         while True:
@@ -35,7 +35,7 @@ class Main(Cfg):
         iters = 30
         for i in range(iters):
             print(f'\n{u.get_now()} ITER: {i} of {iters}')
-            t = trader.Trader()
+            t = trader.Trader(self)
             threading.Thread(target=t.do_trading).start()
             hour = datetime.now().hour
             n = 300 if hour >= 22 or hour <= 8 else 120
