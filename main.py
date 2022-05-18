@@ -32,7 +32,7 @@ class Main(Cfg):
             time.sleep(60*30)
 
     def run_check_instruments(self, n=120):
-        iters = 30
+        iters = 10
         for i in range(iters):
             print(f'\n{u.get_now()} ITER: {i} of {iters}')
             t = trader.Trader(self)
@@ -45,30 +45,21 @@ class Main(Cfg):
     def on_tick(self, cp):
         pass
 
+    def on_data_detailed(self, data):
+        pass
+
     def on_data(self, data):
-        if data.type == 'DAILY_FINANCING':
+        excluded = ['DAILY_FINANCING',
+                    'STOP_LOSS_ORDER_REJECT',
+                    'MARKET_ORDER_REJECT',
+                    'ORDER_CANCEL',
+                    'MARKET_ORDER']
+        if data.type in excluded or data.reason == 'ON_FILL':
+            # print(data)
             return
 
+        self.close_similar_trade(data)
         self.update_stats(data)
-
-        if data.type == 'STOP_LOSS_ORDER_REJECT':
-            print(data)
-
-        if data.type == 'MARKET_ORDER_REJECT':
-            print(data.type, data.tradeClose.tradeID)
-
-        if data.type == 'ORDER_FILL' and data.reason == 'STOP_LOSS_ORDER':
-            if data.pl < 0:
-                self.close_similar_trade(abs(data.pl))
-
-        if data.type == 'ORDER_FILL' and data.reason == 'TRAILING_STOP_LOSS_ORDER':
-            if data.pl < 0:
-                self.close_similar_trade(abs(data.pl))
-
-        types = ['ORDER_CANCEL', 'MARKET_ORDER']
-        reasons = ['ON_FILL']
-        if (data.type in types) or (data.reason in reasons):
-            return
 
         msg = f"{datetime.now().strftime('%H:%M:%S')}"
         inst = ''
@@ -87,10 +78,17 @@ class Main(Cfg):
             msg += f" {data.units:.0f} PL:{data.pl}"
         print(msg)
 
-    def close_similar_trade(self, pl_value):
+    def close_similar_trade(self, data):
+        if data.type != 'ORDER_FILL':
+            return
+        reas = ['STOP_LOSS_ORDER', 'TRAILING_STOP_LOSS_ORDER']
+        if data.reason not in reas:
+            return
+        if data.pl > 0:
+            return
         for t in self.account.trades:
             # single trade
-            if t.unrealizedPL > pl_value:
+            if t.unrealizedPL > abs(data.pl):
                 self.ctx.trade.close(self.ACCOUNT_ID, t.id, units='ALL')
                 return
         # multiple trades
@@ -102,9 +100,9 @@ class Main(Cfg):
                 trade_ids.append(t.id)
                 trades.append(t)
                 sum_unrealized += t.unrealizedPL
-                if sum_unrealized > pl_value:
+                if sum_unrealized > abs(data.pl):
                     for trada in trades:
-                        self.trade.close(self.ACCOUNT_ID, trada.id, units='ALL')
+                        self.ctx.trade.close(self.ACCOUNT_ID, trada.id, units='ALL')
                     return
 
         print('NO replacement winning trade(s)')

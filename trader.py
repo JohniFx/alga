@@ -1,6 +1,5 @@
 import utils as u
 import quant
-import threading
 import datetime
 import v20
 
@@ -27,6 +26,9 @@ class Trader():
         self.cfg.print_account()
 
     def check_positions(self):
+        for p in self.cfg.account.positions:
+            print(f'\t{p.instrument}, {p.unrealizedPL} {p.marginUsed}')
+
         if len(self.cfg.account.trades) < self.cfg.account.openPositionCount:
             return
         #
@@ -326,7 +328,7 @@ class Trader():
                     print(u.get_now(), 'Close trade without stop')
                     self.close_trade(t)
 
-    def get_position(self, inst):
+    def get_position(self, inst) -> v20.position.Position:
         for p in self.cfg.account.positions:
             if p.instrument == inst:
                 return p

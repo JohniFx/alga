@@ -134,22 +134,23 @@ class Cfg(object):
     def run_transaction_stream(self):
         print('start transaction stream')
         response = self.ctxs.transaction.stream(self.ACCOUNT_ID)
-        try:
-            for t, d in response.parts():
-                if d.type != "HEARTBEAT":
-                    self.notify_transaction_observers(d)
-        except Exception as e:
-            print('Transaction stream crashed. RESTART', e)
-            time.sleep(5)
-            self.restart()
+        # try:
+        for t, d in response.parts():
+            if d.type != "HEARTBEAT":
+                self.notify_transaction_observers(d)
+        # except Exception as e:
+            # print('Transaction stream crashed. RESTART', e, d)
+            # time.sleep(5)
+            # self.restart()
 
     def run_account_update(self):
         print('start account polling')
+        _lastId = self.account.lastTransactionID
+
         while True:
             try:
-                # self.account = self.get_account()
                 r = self.ctx.account.changes(self.ACCOUNT_ID,
-                                             sinceTransactionID=self.account.lastTransactionID)
+                                             sinceTransactionID=_lastId)
                 changes = r.get('changes')
                 state = r.get('state')
                 _lastId = r.get('lastTransactionID')
@@ -161,16 +162,15 @@ class Cfg(object):
                 self.restart()
             time.sleep(30)
 
-    def update_account(self, changes, state):
+    def update_account(self,
+                       changes: v20.account.AccountChanges,
+                       state: v20.account.AccountChangesState):
         self.apply_changes(changes)
+        #
         self.update_fields(state)
         self.update_trades(state)
         self.update_positions(state)
         self.update_orders(state)
-
-    def get_piploc(self, inst):
-        #
-        return self.instruments[inst]['pipLocation']
 
     def update_trades(self, state):
         for st in state.trades:
@@ -189,14 +189,14 @@ class Cfg(object):
         if hasattr(dest, name) and getattr(dest, name) is not None:
             setattr(dest, name, value)
 
-    def update_positions(self, state):
+    def update_positions(self, state: v20.account.AccountChangesState):
         for sp in state.positions:
-            for ap in self.account.positions:
-                if ap.instrument == sp.instrument:
-                    ap.netUnrealizedPL = sp.netUnrealizedPL
-                    ap.longUnrealizedPL = sp.longUnrealizedPL
-                    ap.shortUnrealizedPL = sp.shortUnrealizedPL
-                    ap.marginUsed = sp.marginUsed
+            for p in self.account.positions:
+                if p.instrument == sp.instrument:
+                    p.unrealizedPL = sp.netUnrealizedPL
+                    p.long.unrealizedPL = sp.longUnrealizedPL
+                    p.short.unrealizedPL = sp.shortUnrealizedPL
+                    p.marginUsed = sp.marginUsed
 
     def update_orders(self, state):
         for so in state.orders:
@@ -205,28 +205,29 @@ class Cfg(object):
                     o.trailingStopValue = so.trailingStopValue
                     o.distance = so.triggerDistance
 
-    def apply_changes(self, changes):
+    def apply_changes(self, changes: v20.account.AccountChanges):
+        # Trades Opened
         for to in changes.tradesOpened:
             self.account.trades.append(to)
+        # Trades Reduced
         for tr in changes.tradesReduced:
             for t in self.account.trades:
                 if t.id == tr.id:
                     t.currentUnits = tr.currentUnits
                     t.realizedPL = tr.realizedPL
                     t.averageClosePrice = tr.averageClosePrice
-
+        # Trades Closed
         for tc in changes.tradesClosed:
             for t in self.account.trades:
                 if t.id == tc.id:
                     self.account.trades.remove(t)
-
+        #
         for cp in changes.positions:
             for ap in self.account.positions:
                 if ap.instrument == cp.instrument:
                     self.account.positions.remove(ap)
                     self.account.positions.append(cp)
-                    ap.unrealizedPL = 0.0
-
+        #
         for occ in changes.ordersCancelled:
             for o in self.account.orders:
                 if o.id == occ.id:
@@ -281,6 +282,10 @@ class Cfg(object):
         for o in self.account.orders:
             if o.id == orderid:
                 return o
+
+    def get_piploc(self, inst):
+        #
+        return self.instruments[inst]['pipLocation']
 
 
 if __name__ == '__main__':
