@@ -32,7 +32,7 @@ class Cfg(object):
         threading.Thread(target=self.run_price_stream).start()
         threading.Thread(target=self.run_transaction_stream).start()
         threading.Thread(target=self.run_account_update).start()
-
+        #
         insts = self.ctx.account.instruments(self.ACCOUNT_ID).get('instruments')
         self.instruments = {i.name: i.dict() for i in insts}
 
@@ -40,7 +40,7 @@ class Cfg(object):
         import os
         import sys
         print(f'\n{u.get_now()} RESTART\n')
-        os.execv('./main.py')
+        os.execv('./main.py', sys.argv)
 
     def get_account(self):
         response = self.ctx.account.get(self.ACCOUNT_ID)
@@ -63,41 +63,12 @@ class Cfg(object):
     def get_global_params(self):
         global_params = dict(
             tp=35,
-            sl=13,
+            sl=12,
             ts=15,
             max_spread=3,
-            be_pips=11,
-            be_sl=2)
+            be_pips=12,
+            be_sl=3)
         return global_params
-
-    def create_stats(self) -> dict:
-        stats = dict(
-            created=str(datetime.now()),
-            count_sl=0,
-            count_ts=0,
-            count_tp=0,
-            sum_sl=0,
-            sum_ts=0,
-            sum_tp=0,
-            count_manual=0,
-            sum_manual=0
-        )
-        if datetime.now().hour != 7:
-            try:
-                f = open('stats.json', 'r')
-                stats = json.load(f)
-            except OSError as e:
-                print('no stats yet', e)
-            except json.decoder.JSONDecodeError as e:
-                print('json file hiba', e, )
-            self.print_stats(stats)
-        return stats
-
-    def print_stats(self, stats):
-        print(f"{u.get_now()} sl: {stats['count_sl']}/{stats['sum_sl']:.2f}",
-              f" ts: {stats['count_ts']}/{stats['sum_ts']:.2f}",
-              f" tp: {stats['count_tp']}/{stats['sum_tp']:.2f}",
-              f" mt: {stats['count_manual']}/{stats['sum_manual']:.2f}")
 
     def notify_price_observers(self, cp):
         for o in self.price_observers:
@@ -118,7 +89,6 @@ class Cfg(object):
         try:
             for typ, data in response.parts():
                 if typ == "pricing.ClientPrice":
-                    # print(f'{data.instrument} {data.bids[0].price} {data.tradeable}')
                     cp = dict(
                         i=data.instrument,
                         bid=data.bids[0].price,
@@ -181,7 +151,6 @@ class Cfg(object):
     def apply_transactions(self, changes):
         for tr in changes.transactions:
             if tr.type == 'ORDER_FILL':
-                # print(f'tr balance:{tr.accountBalance}')
                 self.account.balance = tr.accountBalance
 
     def update_trades(self, state):
@@ -290,6 +259,16 @@ class Cfg(object):
             if p.marginUsed is not None:
                 c+=1
         return c
+
+    def get_positions(self):
+        for p in self.account.positions:
+            if p.marginUsed is not None:
+                yield p
+
+    def get_trades_by_instrument(self, inst) ->list:
+        for t in self.account.trades:
+            if t.instrument == inst:
+                yield t
 
     def get_trade_by_id(self, tradeid: int) -> v20.trade.TradeSummary:
         for t in self.account.trades:

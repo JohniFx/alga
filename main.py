@@ -6,19 +6,19 @@ import threading
 import time
 from datetime import datetime
 import utils as u
-import json
+from stats import Stat
 __version__ = '2022-05-17'
 
 
 class Main(Cfg):
     def __init__(self) -> None:
         super().__init__()
-
+        self.stats = Stat()
         self.price_observers.append(self)
         self.transaction_observers.append(self)
         self.account_observers.append(self)
-        time.sleep(5)
-        self.stats = self.create_stats()
+        time.sleep(4)
+
         self.print_account()
         threading.Thread(target=self.update_kpi).start()
         threading.Thread(target=self.run_check_instruments).start()
@@ -31,14 +31,16 @@ class Main(Cfg):
             q.update_kpi_file()
             time.sleep(60*30)
 
-    def run_check_instruments(self, n=120):
-        iters = 10
+    def run_check_instruments(self, n=120, iters=5):
         for i in range(iters):
             print(f'\n{u.get_now()} ITER: {i} of {iters}')
             t = trader.Trader(self)
-            threading.Thread(target=t.do_trading).start()
-            hour = datetime.now().hour
-            n = 300 if hour >= 22 or hour <= 8 else 120
+            t1= threading.Thread(target=t.do_trading)
+            t1.start()
+            t1.join()
+            self.stats.show()
+            h = datetime.now().hour
+            n = 300 if h >= 22 or h <= 8 else 120
             time.sleep(n)
         self.restart()
 
@@ -59,7 +61,7 @@ class Main(Cfg):
             return
 
         self.close_similar_trade(data)
-        self.update_stats(data)
+        self.stats.update(data)
 
         msg = f"{datetime.now().strftime('%H:%M:%S')}"
         inst = ''
@@ -109,26 +111,6 @@ class Main(Cfg):
 
     def on_account_changes(self):
         pass
-
-    def update_stats(self, data):
-        if data.reason == 'TAKE_PROFIT_ORDER':
-            self.stats['count_tp'] += 1
-            self.stats['sum_tp'] += data.pl
-        elif data.reason == 'STOP_LOSS_ORDER':
-            self.stats['count_sl'] += 1
-            self.stats['sum_sl'] += data.pl
-        elif data.reason == 'TRAILING_STOP_LOSS_ORDER':
-            self.stats['count_ts'] += 1
-            self.stats['sum_ts'] += data.pl
-        elif data.reason == 'MARKET_ORDER_TRADE_CLOSE':
-            self.stats['count_manual'] += 1
-            self.stats['sum_manual'] += data.pl
-        else:
-            return
-        self.print_stats(self.stats)
-        with open('stats.json', 'w') as f:
-            json.dump(self.stats, f, indent=2)
-
 
 if __name__ == '__main__':
     m = Main()

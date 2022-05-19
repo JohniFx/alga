@@ -26,43 +26,24 @@ class Trader():
         self.cfg.print_account()
 
     def check_positions(self):
-        for p in self.cfg.account.positions:
-            if p.marginUsed is not None:
-                tradeids = p.long.tradeIDs if p.long.units != 0 else p.short.tradeIDs
-                units = p.long.units if p.long.units != 0 else p.short.units
-                if len(tradeids)>1:
-                    print(f'  {p.instrument} {units:5.0f} {p.unrealizedPL: 7.4f} {p.marginUsed:5.2f}')
-
-        if len(self.cfg.account.trades) < self.cfg.account.openPositionCount:
-            return
-        #
-        positions = self.cfg.ctx.position.list_open(self.cfg.ACCOUNT_ID).get('positions')
-        positions = sorted(positions, key=lambda position: position.unrealizedPL, reverse=True)
-        #
-        for p in positions:
-            ps = None
-            if p.long.units > 0 and len(p.long.tradeIDs) > 1:
-                ps = p.long
-            if p.short.units < 0 and len(p.short.tradeIDs) > 1:
-                ps = p.short
-            if ps is not None:
-                print(f'{p.instrument} pl:{p.unrealizedPL:<5.2f} ap:{ps.averagePrice:>10.5f}')
-                #
-                trades = self.cfg.ctx.trade.list(accountID=self.cfg.ACCOUNT_ID, instrument=p.instrument).get('trades')
-                trades = sorted(trades, key=lambda trade: trade.unrealizedPL, reverse=False)
-                self.rule_close_unbalanced_position(p, ps, trades)
-                # TODO: move all trades stop to position level breakeven
-                #
-                # Scale in new trades
+        for p in self.cfg.get_positions():
+            units = p.long.units if p.long.units != 0 else p.short.units
+            ap = p.long.averagePrice if p.long.units !=0 else p.short.averagePrice
+            td = p.long.tradeIDs if p.long.units !=0 else p.short.tradeIDs
+            if len(td)>1:
+                print(f' {p.instrument} {units:5.0f} {p.unrealizedPL: 7.4f} {ap:>10.5f} {p.marginUsed:5.2f}')
+                self.rule_close_unbalanced_position(p)
                 if self.check_breakeven_for_position(p.instrument):
-                    print('Possible position scale in', p.instrument)
+                    print(' Position scale in', p.instrument)
                     pos = 1 if ps.units > 0 else -1
                     self.check_instrument(p.instrument, pos)
 
-    def rule_close_unbalanced_position(self, p, ps, trades):
+    def rule_close_unbalanced_position(self, p):
+        trades = self.cfg.get_trades_by_instrument(p.instrument)
+        ps = p.long if p.long.units !=0 else p.short
         losingtrades = 0
         for t in trades:
-            print(f'\t {t.currentUnits:.0f}@{t.price:<8.4f} pl:{t.unrealizedPL:>7.2f}')
+            print(f'{t.currentUnits:>4.0f} @ {t.price:<8.4f} pl:{t.unrealizedPL:>7.2f}')
             if t.unrealizedPL < 0:
                 losingtrades += 1
         if p.unrealizedPL >= 0 and losingtrades > 2:
@@ -230,13 +211,10 @@ class Trader():
 
     def place_market(self, inst, units, stopPrice, profitPrice=None, signaltype='0', ts_dist=0):
         prec = self.cfg.instruments[inst]['displayPrecision']
-        gp_ts = self.cfg.get_global_params()['ts']
-        tsdist = gp_ts * pow(10, self.cfg.get_piploc(inst))
-        if ts_dist > tsdist:
-            tsdist = ts_dist
+        gp_ts = self.cfg.get_global_params()['ts']* pow(10, self.cfg.get_piploc(inst))
         sl_on_fill = dict(timeInForce='GTC', price=f'{stopPrice:.{prec}f}')
         tp_on_fill = dict(timeInForce='GTC', price=f'{profitPrice:.{prec}f}')
-        ts_on_fill = dict(timeInForce='GTC', distance=f'{tsdist:.{prec}f}')
+        ts_on_fill = dict(timeInForce='GTC', distance=f'{gp_ts:.{prec}f}')
         ce = dict(id=signaltype, tag='Signal id', comment='Signal id commented')
         #
         order = dict(
