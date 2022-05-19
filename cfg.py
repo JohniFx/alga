@@ -39,21 +39,26 @@ class Cfg(object):
     def restart(self):
         import os
         import sys
-        print(f'\n{u.get_now()} RESTART')
-        os.execv('./main.py', sys.argv)
+        print(f'\n{u.get_now()} RESTART\n')
+        os.execv('./main.py')
 
     def get_account(self):
         response = self.ctx.account.get(self.ACCOUNT_ID)
         return response.get('account')
 
+    ti=[]
     def get_tradeable_instruments(self):
-        ti = [
+        if len(self.ti) == 0:
+            self.ti = [
             'EUR_USD', 'EUR_CAD', 'EUR_NZD', 'EUR_CHF', 'EUR_JPY', 'EUR_AUD', 'EUR_GBP',
             'GBP_USD', 'GBP_CAD', 'GBP_JPY', 'GBP_AUD',
             'AUD_USD', 'AUD_CAD', 'AUD_NZD', 'AUD_JPY',
             'NZD_USD', 'NZD_JPY',
             'USD_CHF', 'USD_CAD', 'USD_JPY']
-        return ti
+        return self.ti
+
+    def set_tradeable_instruments(self, inst:str):
+        self.ti.remove(inst)
 
     def get_global_params(self):
         global_params = dict(
@@ -160,17 +165,24 @@ class Cfg(object):
                 print('Account update loop crashed', e)
                 time.sleep(60)
                 self.restart()
-            time.sleep(30)
+            time.sleep(15)
 
     def update_account(self,
                        changes: v20.account.AccountChanges,
                        state: v20.account.AccountChangesState):
         self.apply_changes(changes)
+        self.apply_transactions(changes)
         #
         self.update_fields(state)
         self.update_trades(state)
         self.update_positions(state)
         self.update_orders(state)
+
+    def apply_transactions(self, changes):
+        for tr in changes.transactions:
+            if tr.type == 'ORDER_FILL':
+                # print(f'tr balance:{tr.accountBalance}')
+                self.account.balance = tr.accountBalance
 
     def update_trades(self, state):
         for st in state.trades:
@@ -240,7 +252,7 @@ class Cfg(object):
                                 t.takeProfitOrderID = None
                             elif occ.type == 'TRAILING_STOP_LOSS':
                                 t.trailingStopLossOrderID = None
-
+        #
         for ocr in changes.ordersCreated:
             self.account.orders.append(ocr)
             for t in self.account.trades:
@@ -252,12 +264,12 @@ class Cfg(object):
                         t.takeProfitOrderID = ocr.id
                     elif ocr.type == 'TRAILING_STOP_LOSS':
                         t.trailingStopLossOrderID = ocr.id
-
+        #
         for ofi in changes.ordersFilled:
             for o in self.account.orders:
                 if o.id == ofi.id:
                     self.account.orders.remove(o)
-
+        #
         for otr in changes.ordersTriggered:
             for o in self.account.orders:
                 if o.id == otr.id:
@@ -266,12 +278,18 @@ class Cfg(object):
     def print_account(self):
         ac = self.account
         print(f"{u.get_now()}",
-              f"BAL: {float(ac.balance):6.0f}",
+              f"BAL: {float(ac.balance):7.2f}",
               f"NAV: {float(ac.NAV):>7.2f}",
               f"pl:{float(ac.unrealizedPL):>6.2f}",
-              f"t:{ac.openTradeCount}",
-              f"o:{ac.pendingOrderCount}",
-              f"p:{ac.openPositionCount}")
+              f"t:{len(ac.trades)}",
+              f"p:{self.get_position_count()}")
+
+    def get_position_count(self) -> int:
+        c = 0
+        for p in self.account.positions:
+            if p.marginUsed is not None:
+                c+=1
+        return c
 
     def get_trade_by_id(self, tradeid: int) -> v20.trade.TradeSummary:
         for t in self.account.trades:

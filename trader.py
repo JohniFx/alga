@@ -27,7 +27,11 @@ class Trader():
 
     def check_positions(self):
         for p in self.cfg.account.positions:
-            print(f'\t{p.instrument}, {p.unrealizedPL} {p.marginUsed}')
+            if p.marginUsed is not None:
+                tradeids = p.long.tradeIDs if p.long.units != 0 else p.short.tradeIDs
+                units = p.long.units if p.long.units != 0 else p.short.units
+                if len(tradeids)>1:
+                    print(f'  {p.instrument} {units:5.0f} {p.unrealizedPL: 7.4f} {p.marginUsed:5.2f}')
 
         if len(self.cfg.account.trades) < self.cfg.account.openPositionCount:
             return
@@ -69,16 +73,17 @@ class Trader():
                 self.cfg.ctx.position.close(self.cfg.ACCOUNT_ID, instrument=p.instrument, shortUnits='ALL')
 
     def check_trades(self):
+        for t in self.cfg.account.trades:
+            sl = self.cfg.get_order_by_id(t.stopLossOrderID)
+            print(f'  {t.instrument} {t.currentUnits:5.0f} {t.unrealizedPL:7.4f} E:{t.price:>8.4f} SL:{sl.price:>8.4f}')
+        #
         self.hot_insts = []
         trades = self.cfg.ctx.trade.list_open(self.cfg.ACCOUNT_ID).get('trades')
         for t in trades:
             self.hot_insts.append(t.instrument)
             if t.unrealizedPL <= 0:
                 continue
-            #
             pip_pl = self.get_pip_pl(t.instrument, t.currentUnits, t.price)
-            if pip_pl is None:
-                return
             # trade already in B/E
             if self.is_be(t):
                 # move stop
@@ -178,6 +183,9 @@ class Trader():
         return dist_from_sl
 
     def is_be(self, t: v20.trade.Trade) -> bool:
+        if not isinstance(t, v20.trade.Trade):
+            raise Exception
+
         c1 = t.currentUnits > 0 and t.stopLossOrder.price >= t.price
         c2 = t.currentUnits < 0 and t.stopLossOrder.price <= t.price
         return True if c1 or c2 else False
@@ -216,7 +224,7 @@ class Trader():
         #
         for t in self.cfg.account.trades:
             if t.unrealizedPL <= 0:
-                print(f'{u.get_now()} RULE: at least one trade is in loss.')
+                print(f'  RULE: {t.instrument} {t.unrealizedPL} trade is in loss.')
                 return False
         return True
 
