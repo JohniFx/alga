@@ -27,15 +27,15 @@ class Trader():
 
     def check_positions(self):
         for p in self.cfg.get_positions():
-            units = p.long.units if p.long.units != 0 else p.short.units
-            ap = p.long.averagePrice if p.long.units !=0 else p.short.averagePrice
             td = p.long.tradeIDs if p.long.units !=0 else p.short.tradeIDs
             if len(td)>1:
+                units = p.long.units if p.long.units != 0 else p.short.units
+                ap = p.long.averagePrice if p.long.units !=0 else p.short.averagePrice
                 print(f' {p.instrument} {units:5.0f} {p.unrealizedPL: 7.4f} {ap:>10.5f} {p.marginUsed:5.2f}')
                 self.rule_close_unbalanced_position(p)
                 if self.check_breakeven_for_position(p.instrument):
                     print(' Position scale in', p.instrument)
-                    pos = 1 if ps.units > 0 else -1
+                    pos = 1 if p.long.units != 0 else -1
                     self.check_instrument(p.instrument, pos)
 
     def rule_close_unbalanced_position(self, p):
@@ -54,13 +54,10 @@ class Trader():
                 self.cfg.ctx.position.close(self.cfg.ACCOUNT_ID, instrument=p.instrument, shortUnits='ALL')
 
     def check_trades(self):
+        self.hot_insts = []
         for t in self.cfg.account.trades:
             sl = self.cfg.get_order_by_id(t.stopLossOrderID)
             print(f'  {t.instrument} {t.currentUnits:5.0f} {t.unrealizedPL:7.4f} E:{t.price:>8.4f} SL:{sl.price:>8.4f}')
-        #
-        self.hot_insts = []
-        trades = self.cfg.ctx.trade.list_open(self.cfg.ACCOUNT_ID).get('trades')
-        for t in trades:
             self.hot_insts.append(t.instrument)
             if t.unrealizedPL <= 0:
                 continue
@@ -75,7 +72,6 @@ class Trader():
                     self.move_stop(t, pip_pl, r)
                 # try to add
                 if self.get_position(t.instrument).unrealizedPL > 0:
-                    # TODO: ez csak egyszer fusson le instrumentumonként!
                     if self.is_trade_allowed():
                         self.print_trade(t, 'ADDD', pip_pl)
                         pos = 1 if t.currentUnits > 0 else -1
@@ -102,14 +98,15 @@ class Trader():
             sl_price = t.price - be_sl
         self.set_stoploss(t.id, sl_price, t.instrument)
 
-    def check_breakeven_for_position(self, instrument: str) -> bool:
+    def check_breakeven_for_position(self, inst: str) -> bool:
         all_be = []
-        trades = self.cfg.ctx.trade.list(self.cfg.ACCOUNT_ID, instrument=instrument).get('trades')
+        trades = self.cfg.get_trades_by_instrument(inst)
         for t in trades:
-            if t.currentUnits > 0 and t.stopLossOrder.price > t.price:
+            sl = self.cfg.get_order_by_id(t.stopLossOrderID)
+            if t.currentUnits > 0 and sl.price > t.price:
                 all_be.append(True)
                 continue
-            if t.currentUnits < 0 and t.stopLossOrder.price < t.price:
+            if t.currentUnits < 0 and sl.price < t.price:
                 all_be.append(True)
                 continue
             all_be.append(False)
@@ -163,12 +160,10 @@ class Trader():
             dist_from_sl = sl.price - ask
         return dist_from_sl
 
-    def is_be(self, t: v20.trade.Trade) -> bool:
-        if not isinstance(t, v20.trade.Trade):
-            raise Exception
-
-        c1 = t.currentUnits > 0 and t.stopLossOrder.price >= t.price
-        c2 = t.currentUnits < 0 and t.stopLossOrder.price <= t.price
+    def is_be(self, t: v20.trade.TradeSummary) -> bool:
+        sl = self.cfg.get_order_by_id(t.stopLossOrderID)
+        c1 = t.currentUnits > 0 and sl.price >= t.price
+        c2 = t.currentUnits < 0 and sl.price <= t.price
         return True if c1 or c2 else False
 
     def get_trades_by_instrument(self, trades, instrument):
