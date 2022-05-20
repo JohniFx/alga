@@ -10,6 +10,10 @@ class Trader():
         self.initial_tradecheck()
         self.hot_insts = []
 
+    def do_trading_simu(self):
+        for i in self.cfg.get_tradeable_instruments():
+            print(i)
+
     def do_trading(self):
         if self.cfg.account.unrealizedPL > 25:
             self.close_all()

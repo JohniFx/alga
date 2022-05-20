@@ -20,8 +20,12 @@ class Main(Cfg):
         time.sleep(4)
 
         self.print_account()
-        threading.Thread(target=self.update_kpi).start()
-        threading.Thread(target=self.run_check_instruments).start()
+        t1 = threading.Thread(target=self.update_kpi)
+        t1.start()
+
+        t2 = threading.Thread(target=self.run_check_instruments)
+        t2.start()
+
 
     def update_kpi(self):
         while True:
@@ -35,9 +39,9 @@ class Main(Cfg):
         for i in range(iters):
             print(f'\n{u.get_now()} ITER: {i} of {iters}')
             t = trader.Trader(self)
-            t1= threading.Thread(target=t.do_trading)
-            t1.start()
-            t1.join()
+            t3= threading.Thread(target=t.do_trading)
+            threading.Thread(target=t.do_trading_simu).start()
+            t3.start()
             self.stats.show()
             h = datetime.now().hour
             n = 300 if h >= 22 or h <= 8 else 120
@@ -114,5 +118,3 @@ class Main(Cfg):
 
 if __name__ == '__main__':
     m = Main()
-
-

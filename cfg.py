@@ -8,6 +8,8 @@ import utils as u
 
 
 class Cfg(object):
+    threads = []
+
     def __init__(self):
         #
         config = configparser.ConfigParser()
@@ -29,9 +31,11 @@ class Cfg(object):
         self.account_observers = []
         #
         self.account = self.get_account()
-        threading.Thread(target=self.run_price_stream).start()
-        threading.Thread(target=self.run_transaction_stream).start()
-        threading.Thread(target=self.run_account_update).start()
+        self.threads.append(threading.Thread(target=self.run_price_stream))
+        self.threads.append(threading.Thread(target=self.run_transaction_stream))
+        self.threads.append(threading.Thread(target=self.run_account_update))
+        for t in self.threads:
+            t.start()
         #
         insts = self.ctx.account.instruments(self.ACCOUNT_ID).get('instruments')
         self.instruments = {i.name: i.dict() for i in insts}
@@ -264,6 +268,13 @@ class Cfg(object):
         for p in self.account.positions:
             if p.marginUsed is not None:
                 yield p
+
+    def get_position_by_instrument(self, inst)->list:
+        for p in self.account.positions:
+            if p.marginUsed is not None:
+                if p.instrument == inst:
+                    return p
+        return None
 
     def get_trades_by_instrument(self, inst) ->list:
         for t in self.account.trades:
