@@ -12,7 +12,24 @@ class Trader():
 
     def do_trading_simu(self):
         for i in self.cfg.get_tradeable_instruments():
-            print(i)
+            print(i, end='')
+            # Positions
+            p = self.cfg.get_position_by_instrument(i)
+            if p is not None:
+                units = p.long.units if p.long.units != 0 else p.short.units
+                ap = p.long.averagePrice if p.long.units !=0 else p.short.averagePrice
+                print(f' {units} {p.unrealizedPL} {ap}')
+            else:
+                print(f' -')
+            # trades
+            trades = self.cfg.get_trades_by_instrument(i)
+            if trades is not None:
+                for t in trades:
+                    print(f'    trade: #{t.id}  {t.currentUnits:5.0f}  {t.unrealizedPL:5.2f}')
+            # 
+
+
+
 
     def do_trading(self):
         if self.cfg.account.unrealizedPL > 25:

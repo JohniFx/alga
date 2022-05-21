@@ -264,12 +264,12 @@ class Cfg(object):
                 c+=1
         return c
 
-    def get_positions(self):
+    def get_positions(self) -> list:
         for p in self.account.positions:
             if p.marginUsed is not None:
                 yield p
 
-    def get_position_by_instrument(self, inst)->list:
+    def get_position_by_instrument(self, inst)->v20.position.Position:
         for p in self.account.positions:
             if p.marginUsed is not None:
                 if p.instrument == inst:

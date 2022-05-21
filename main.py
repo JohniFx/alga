@@ -38,11 +38,11 @@ class Main(Cfg):
     def run_check_instruments(self, n=120, iters=5):
         for i in range(iters):
             print(f'\n{u.get_now()} ITER: {i} of {iters}')
-            t = trader.Trader(self)
-            t3= threading.Thread(target=t.do_trading)
-            threading.Thread(target=t.do_trading_simu).start()
-            t3.start()
             self.stats.show()
+            t = trader.Trader(self)
+            # t3= threading.Thread(target=t.do_trading)
+            # t3.start()
+            threading.Thread(target=t.do_trading_simu).start()
             h = datetime.now().hour
             n = 300 if h >= 22 or h <= 8 else 120
             time.sleep(n)
