@@ -10,19 +10,53 @@ class Trader():
         self.initial_tradecheck()
         self.hot_insts = []
 
-    def trading_backbone():
-        for i in self.cfg.get_tradeable_instruments():
-            trades = get_trades_by_instrument()
+    def manage_trading(self):
+        for inst in self.cfg.get_tradeable_instruments():
+            trades = list(self.cfg.get_trades_by_instrument(inst))
+            print(inst, 'trades:', len(trades))
 
             if len(trades) == 0:
-                check_instrument()
+                self.check_instrument(inst)
 
             if len(trades) == 1:
-                manage_trade()
+                self.manage_trade(trades[0])
 
             if len(trades) > 1:
-                manage_position()
+                self.manage_position(inst)
 
+    def manage_trade(self, t:v20.trade.TradeSummary):
+        print('. manage trade:', t.id, t.instrument, t.unrealizedPL)
+        # breakeven
+        self.trade_breakeven(t)
+        # move stop
+        # move tp
+        # move ts
+        # check scale in
+        # check scale out
+
+    def manage_position(self, inst):
+        position = self.cfg.get_position_by_instrument(inst)
+        ap = position.long.averagePrice if position.long.units !=0 else position.short.averagePrice
+        print('. manage position:',  position.unrealizedPL, ap)
+
+        # rule balancing
+
+        # rule stops at average price
+        # adjust ts
+        # rule move common tp
+        # rule position scale in
+
+    def trade_breakeven(self, trade:v20.trade.TradeSummary):
+        sl = self.cfg.get_order_by_id(trade.stopLossOrderID)
+        # test if already in breakeven
+        c1 = t.currentUnits > 0 and sl.price >= t.price
+        c2 = t.currentUnits < 0 and sl.price <= t.price
+        if c1 or c2:
+            return
+        # test if eligible
+        currentPrice = self.cfg.instruments[trade.instrument]
+        print('. trade breakeven test:', trade.price sl.price, currentPrice)
+        # TODO: 
 
 
 
@@ -43,8 +77,6 @@ class Trader():
                 for t in trades:
                     print(f'    trade: #{t.id}  {t.currentUnits:5.0f}  {t.unrealizedPL:5.2f}')
             # 
-
-
 
 
     def do_trading(self):
@@ -150,7 +182,7 @@ class Trader():
         return all(all_be)
 
     def check_instrument(self, inst: str, positioning: int = 0) -> str:
-        # print(f'{u.get_now()} {inst} pos: {positioning}')
+        print(f'. check {inst}')
         signal = quant.Quant(self.cfg).get_signal(inst, 15, 'M5', positioning)
         if signal is None:
             return
@@ -203,12 +235,12 @@ class Trader():
         c2 = t.currentUnits < 0 and sl.price <= t.price
         return True if c1 or c2 else False
 
-    def get_trades_by_instrument(self, trades, instrument):
-        inst_trades = []
-        for t in trades:
-            if t.instrument == instrument:
-                inst_trades.append(t)
-        return inst_trades
+    # def get_trades_by_instrument(self, trades, instrument):
+    #     inst_trades = []
+    #     for t in trades:
+    #         if t.instrument == instrument:
+    #             inst_trades.append(t)
+    #     return inst_trades
 
     def print_trade(self, trade, kwrd: str, pip_pl: float):
         print(f'',
