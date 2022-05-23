@@ -60,7 +60,7 @@ class Trader():
         currentPrice = self.cfg.instruments[trade.instrument]
         if trade.currentUnits > 0:
             if currentPrice['bid'] > (trade.price + self.cfg.get_global_params()['be_pips']* pow(10, self.cfg.get_piploc(trade.instrument))):
-                sl_price = trade.price + self.cfg.get_global_params()['be_sl'] * pow(10, self.cfg.get_piploc(inst))
+                sl_price = trade.price + self.cfg.get_global_params()['be_sl'] * pow(10, self.cfg.get_piploc(trade.instrument))
                 print(f'. long trade breakeven: E: {trade.price} S: {sl.price} -> S:{sl_price} B:{currentPrice["bid"]}')
                 self.set_stoploss(trade.id, sl_price, trade.instrument)
         # TODO: short side
