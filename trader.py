@@ -14,18 +14,15 @@ class Trader():
         for inst in self.cfg.get_tradeable_instruments():
             trades = list(self.cfg.get_trades_by_instrument(inst))
             print(inst, 'trades:', len(trades))
-
             if len(trades) == 0:
                 self.check_instrument(inst)
-
             if len(trades) == 1:
                 self.manage_trade(trades[0])
-
             if len(trades) > 1:
                 self.manage_position(inst)
 
     def manage_trade(self, t:v20.trade.TradeSummary):
-        print('. manage trade:', t.id, t.instrument, t.unrealizedPL)
+        print(t.instrument, 'manage trade:', t.id,  t.unrealizedPL)
         # breakeven
         self.trade_breakeven(t)
         # move stop
@@ -34,10 +31,10 @@ class Trader():
         # check scale in
         # check scale out
 
-    def manage_position(self, inst):
+    def manage_position(self, inst:str):
         position = self.cfg.get_position_by_instrument(inst)
         ap = position.long.averagePrice if position.long.units !=0 else position.short.averagePrice
-        print('. manage position:',  position.unrealizedPL, ap)
+        print(inst, 'manage position:',  position.unrealizedPL, ap)
 
         # rule balancing
 
@@ -49,13 +46,13 @@ class Trader():
     def trade_breakeven(self, trade:v20.trade.TradeSummary):
         sl = self.cfg.get_order_by_id(trade.stopLossOrderID)
         # test if already in breakeven
-        c1 = t.currentUnits > 0 and sl.price >= t.price
-        c2 = t.currentUnits < 0 and sl.price <= t.price
+        c1 = trade.currentUnits > 0 and sl.price >= trade.price
+        c2 = trade.currentUnits < 0 and sl.price <= trade.price
         if c1 or c2:
             return
         # test if eligible
         currentPrice = self.cfg.instruments[trade.instrument]
-        print('. trade breakeven test:', trade.price, sl.price, currentPrice)
+        print('. trade breakeven test:', trade.price, sl.price, currentPrice['bid'])
         # TODO: 
 
 
@@ -182,29 +179,24 @@ class Trader():
         return all(all_be)
 
     def check_instrument(self, inst: str, positioning: int = 0) -> str:
-        print(f'. check {inst}')
+        print(f'{inst} check. pos: {positioning}')
+        # get signal
         signal = quant.Quant(self.cfg).get_signal(inst, 15, 'M5', positioning)
         if signal is None:
             return
         valid = [(-1, -1), (-1, 0), (1, 0), (1, 1)]
         if (signal['signal'], positioning) not in valid:
             return None
-        #
+        # pre-trade
         sl = self.cfg.get_global_params()['sl']
         tp = self.cfg.get_global_params()['tp']
         units = int(self.cfg.account.marginAvailable/100) * signal['signal']
-        #
-        try:
-            ask = self.cfg.instruments[inst]['ask']
-        except KeyError as k:
-            print(inst, positioning, k)
-            return
+        ask = self.cfg.instruments[inst]['ask']
         bid = self.cfg.instruments[inst]['bid']
         spread = self.cfg.instruments[inst]['spread']
         piploc = pow(10, self.cfg.get_piploc(inst))
         #
         spread_piploc = spread / piploc
-        # print(f'{u.get_now()} SPRD: {inst} {spread} {spread_piploc:.1f}')
         if spread_piploc > self.cfg.get_global_params()['max_spread']:
             return
         #
@@ -212,11 +204,11 @@ class Trader():
         stopprice = entry - signal['signal'] * sl * piploc
         profitPrice = entry + signal['signal'] * tp * piploc
         #
-        msg = (f'{u.get_now()} OPEN {signal["signaltype"]} {inst}'
-               f' {units}'
-               f' {entry:.5f}'
-               f' {spread:>6.5f}')
-        print(msg)
+        # msg = (f'{u.get_now()} OPEN {signal["signaltype"]} {inst}'
+        #        f' {units}'
+        #        f' {entry:.5f}'
+        #        f' {spread:>6.5f}')
+        # print(msg)
         self.place_market(inst, units, stopprice, profitPrice, 'S3', signal['ts_dist'])
 
     def get_distance_from_sl(self, trade: v20.trade.Trade):
