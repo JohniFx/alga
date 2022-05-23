@@ -9,7 +9,6 @@ import utils as u
 from stats import Stat
 __version__ = '2022-05-17'
 
-
 class Main(Cfg):
     def __init__(self) -> None:
         super().__init__()

@@ -15,6 +15,7 @@ class Stat():
             s = json.load(f)
         except OSError as e:
             print('No stats file')
+            s = self.create()
         except Exception as x:
             print(x)
 

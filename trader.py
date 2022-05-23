@@ -10,6 +10,22 @@ class Trader():
         self.initial_tradecheck()
         self.hot_insts = []
 
+    def trading_backbone():
+        for i in self.cfg.get_tradeable_instruments():
+            trades = get_trades_by_instrument()
+
+            if len(trades) == 0:
+                check_instrument()
+
+            if len(trades) == 1:
+                manage_trade()
+
+            if len(trades) > 1:
+                manage_position()
+
+
+
+
     def do_trading_simu(self):
         for i in self.cfg.get_tradeable_instruments():
             print(i, end='')
