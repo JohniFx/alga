@@ -55,7 +55,7 @@ class Trader():
             return
         # test if eligible
         currentPrice = self.cfg.instruments[trade.instrument]
-        print('. trade breakeven test:', trade.price sl.price, currentPrice)
+        print('. trade breakeven test:', trade.price, sl.price, currentPrice)
         # TODO: 
 
 
