@@ -36,7 +36,7 @@ class Trader():
 
     def trade_scale_in(self, t: v20.trade.TradeSummary):
         sl = self.cfg.get_order_by_id(t.stopLossOrderID)
-        if t.currentUnits > 0 and (sl.price > t.price)
+        if t.currentUnits > 0 and (sl.price > t.price):
             print('Scale in long ')
             self.check_instrument(t.instrument, 1)
         if t.currentUnits < 0 and (sl.price < t.price):
