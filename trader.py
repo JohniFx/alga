@@ -30,7 +30,18 @@ class Trader():
         # move tp
         # move ts
         # check scale in
+        self.trade_scale_in(t)
+
         # check scale out
+
+    def trade_scale_in(self, t: v20.trade.TradeSummary):
+        sl = self.cfg.get_order_by_id(t.stopLossOrderID)
+        if t.currentUnits > 0:
+            if sl.price > t.price:
+                self.check_instrument(t.instrument, 1)
+        if t.currentUnits < 0:
+            if sl.price < t.price:
+                self.check_instrument(t.instrument, -1)
 
     def manage_position(self, inst:str):
         position = self.cfg.get_position_by_instrument(inst)
@@ -53,16 +64,17 @@ class Trader():
         c1 = trade.currentUnits > 0 and sl.price >= trade.price
         c2 = trade.currentUnits < 0 and sl.price <= trade.price
         if c1 or c2:
-
+            print(f'{trade.instrument} no be. trade in loss pl: {trade.unrealizedPL:.2f}')
             return
         # test if eligible
         currentPrice = self.cfg.instruments[trade.instrument]
+        # Long b/e check
         if trade.currentUnits > 0:
             if currentPrice['bid'] > (trade.price + self.cfg.get_global_params()['be_pips']* pow(10, self.cfg.get_piploc(trade.instrument))):
                 sl_price = trade.price + self.cfg.get_global_params()['be_sl'] * pow(10, self.cfg.get_piploc(trade.instrument))
-                print(f'. long breakeven: E: {trade.price} S: {sl.price} -> S:{sl_price} B:{currentPrice["bid"]}')
+                print(f'. long breakeven: E: {trade.price} S: {sl.price} -> S:{sl_price:} B:{currentPrice["bid"]}')
                 self.set_stoploss(trade.id, sl_price, trade.instrument)
-        # TODO: short side
+        # Short b/e check
         if trade.currentUnits < 0:
             if currentPrice['ask']< (trade.price - self.cfg.get_global_params()['be_pips'] * pow(10, self.cfg.get_piploc(trade.instrument))):
                 sl_price = trade.price - self.cfg.get_global_params()['be_pips'] * pow(10, self.cfg.get_piploc(trade.instrument))
