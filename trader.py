@@ -20,9 +20,8 @@ class Trader():
             if len(trades) > 1:
                 self.manage_position(inst)
             
-
     def manage_trade(self, t:v20.trade.TradeSummary):
-        print(t.instrument, f'manage trade: #{t.id} PL: {t.unrealizedPL:>6.2f}')
+        print(t.instrument, f'trade: #{t.id} PL: {t.unrealizedPL:>6.2f}')
         # skip
         if t.unrealizedPL < 0:
             return
@@ -36,19 +35,18 @@ class Trader():
         # check scale out
 
     def trade_scale_in(self, t: v20.trade.TradeSummary):
-        print('Scale in')
         sl = self.cfg.get_order_by_id(t.stopLossOrderID)
-        if t.currentUnits > 0:
-            if sl.price > t.price: 
-                self.check_instrument(t.instrument, 1)
-        if t.currentUnits < 0:
-            if sl.price < t.price:
-                self.check_instrument(t.instrument, -1)
+        if t.currentUnits > 0 and (sl.price > t.price)
+            print('Scale in long ')
+            self.check_instrument(t.instrument, 1)
+        if t.currentUnits < 0 and (sl.price < t.price):
+            print('Scale in short')
+            self.check_instrument(t.instrument, -1)
 
     def manage_position(self, inst:str):
         position = self.cfg.get_position_by_instrument(inst)
         ap = position.long.averagePrice if position.long.units !=0 else position.short.averagePrice
-        print(inst, 'manage position:',  position.unrealizedPL, ap)
+        print(inst, 'position:',  position.unrealizedPL, ap)
 
         # rule balancing
         self.rule_close_unbalanced_position(position)
