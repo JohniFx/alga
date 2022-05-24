@@ -13,7 +13,6 @@ class Trader():
     def manage_trading(self):
         for inst in self.cfg.get_tradeable_instruments():
             trades = list(self.cfg.get_trades_by_instrument(inst))
-            print(inst, 'trades:', len(trades))
             if len(trades) == 0:
                 self.check_instrument(inst)
             if len(trades) == 1:
@@ -22,7 +21,7 @@ class Trader():
                 self.manage_position(inst)
 
     def manage_trade(self, t:v20.trade.TradeSummary):
-        print(t.instrument, 'manage trade:', t.id,  t.unrealizedPL)
+        print(t.instrument, f'manage trade: #{t.id} PL: {t.unrealizedPL:.2f}')
         if t.unrealizedPL < 0:
             return
         # breakeven
@@ -61,9 +60,14 @@ class Trader():
         if trade.currentUnits > 0:
             if currentPrice['bid'] > (trade.price + self.cfg.get_global_params()['be_pips']* pow(10, self.cfg.get_piploc(trade.instrument))):
                 sl_price = trade.price + self.cfg.get_global_params()['be_sl'] * pow(10, self.cfg.get_piploc(trade.instrument))
-                print(f'. long trade breakeven: E: {trade.price} S: {sl.price} -> S:{sl_price} B:{currentPrice["bid"]}')
+                print(f'. long breakeven: E: {trade.price} S: {sl.price} -> S:{sl_price} B:{currentPrice["bid"]}')
                 self.set_stoploss(trade.id, sl_price, trade.instrument)
         # TODO: short side
+        if trade.currentUnits < 0:
+            if currentPrice['ask']< (trade.price - self.cfg.get_global_params()['be_pips'] * pow(10, self.cfg.get_piploc(trade.instrument))):
+                sl_price = trade.price - self.cfg.get_global_params()['be_pips'] * pow(10, self.cfg.get_piploc(trade.instrument))
+                print(f'. short breakeven: E: {trade.price} S: {sl.price} -> S:{sl_price} A:{currentPrice["ask"]}')
+                self.set_stoploss(trade.id, sl_price, trade.instrument)
 
     def do_trading_simu(self):
         for i in self.cfg.get_tradeable_instruments():
