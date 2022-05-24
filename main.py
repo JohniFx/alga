@@ -42,6 +42,7 @@ class Main(Cfg):
             # threading.Thread(target=t.do_trading).start()
             # threading.Thread(target=t.manage_trading).start()
             self.stats.show()
+            self.print_account()
             h = datetime.now().hour
             n = 300 if h >= 22 or h <= 8 else 120
             time.sleep(n)

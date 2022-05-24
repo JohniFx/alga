@@ -19,9 +19,11 @@ class Trader():
                 self.manage_trade(trades[0])
             if len(trades) > 1:
                 self.manage_position(inst)
+            
 
     def manage_trade(self, t:v20.trade.TradeSummary):
-        print(t.instrument, f'manage trade: #{t.id} PL: {t.unrealizedPL:.2f}')
+        print(t.instrument, f'manage trade: #{t.id} PL: {t.unrealizedPL:>6.2f}')
+        # skip
         if t.unrealizedPL < 0:
             return
         # breakeven
@@ -31,13 +33,13 @@ class Trader():
         # move ts
         # check scale in
         self.trade_scale_in(t)
-
         # check scale out
 
     def trade_scale_in(self, t: v20.trade.TradeSummary):
+        print('Scale in')
         sl = self.cfg.get_order_by_id(t.stopLossOrderID)
         if t.currentUnits > 0:
-            if sl.price > t.price:
+            if sl.price > t.price: 
                 self.check_instrument(t.instrument, 1)
         if t.currentUnits < 0:
             if sl.price < t.price:
