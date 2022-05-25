@@ -175,10 +175,8 @@ class Quant():
         df = self.get_candles(inst, count, tf)
         if df.volume.iloc[-2:].mean() < 100:
             print(f'{inst} low volume: {df.volume.iloc[-2:].mean():.2f}')
-            print(f'{inst} REMOVE FROM INSTRUMENTLIST DUE TO LOW VOLUME')
-            self.cfg.set_tradeable_instruments(inst)
             signal = dict(signal=0, signaltype='LV')
-            return signal
+            return None
 
         self.add_hilo(df)
         self.add_mom(df)
