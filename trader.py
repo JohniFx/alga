@@ -52,7 +52,7 @@ class Trader():
         self.rule_close_unbalanced_position(position)
 
         # rule stops at average price
-        self.rule_position_breakeven(inst)
+        self.rule_position_breakeven(position)
 
         # adjust ts
         # rule move common tp
@@ -80,24 +80,6 @@ class Trader():
                 sl_price = trade.price - self.cfg.get_global_params()['be_pips'] * pow(10, self.cfg.get_piploc(trade.instrument))
                 print(f'. short breakeven: E: {trade.price} S: {sl.price} -> S:{sl_price} A:{currentPrice["ask"]}')
                 self.set_stoploss(trade.id, sl_price, trade.instrument)
-
-    def do_trading_simu(self):
-        for i in self.cfg.get_tradeable_instruments():
-            print(i, end='')
-            # Positions
-            p = self.cfg.get_position_by_instrument(i)
-            if p is not None:
-                units = p.long.units if p.long.units != 0 else p.short.units
-                ap = p.long.averagePrice if p.long.units !=0 else p.short.averagePrice
-                print(f' {units} {p.unrealizedPL} {ap}')
-            else:
-                print(f' -')
-            # trades
-            trades = self.cfg.get_trades_by_instrument(i)
-            if trades is not None:
-                for t in trades:
-                    print(f'    trade: #{t.id}  {t.currentUnits:5.0f}  {t.unrealizedPL:5.2f}')
-            # 
 
     def do_trading(self):
         if self.cfg.account.unrealizedPL > 25:
@@ -127,15 +109,30 @@ class Trader():
                     pos = 1 if p.long.units != 0 else -1
                     self.check_instrument(p.instrument, pos)
 
-    def rule_position_breakeven(self, inst:str):
-        trades = self.cfg.get_trades_by_instrument(inst)
+    def rule_position_breakeven(self, p:v20.position.Position):
+        trades = self.cfg.get_trades_by_instrument(p.instrument)
+        avg_price = p.long.averagePrice if p.long.units !=0 else p.short.averagePrice
+        units = p.long.units if p.long.units != 0 else p.short.units
         for t in trades:
+            if t.unrealizedPL < 0:
+                return
             self.manage_trade(t)
+        current_price = self.cfg.instruments[trade.instrument]
+        if units > 0:
+            current_price['bid'] > (avg_price + self.cfg.get_global_params()['be_pips']* pow(10, self.cfg.get_piploc(p.instrument)))
+            print(f' POSITION LONG BREAKEVEN')
+            for t in trades:
+                sl_price = avg_price + self.cfg.get_global_params()['be_sl'] * pow(10, self.cfg.get_piploc(p.instrument))
+                self.set_stoploss(t.id, sl_price, t.instrument)
+        if units < 0:
+            current_price['ask'] < (avg_price - self.cfg.get_global_params()['be_pips']* pow(10, self.cfg.get_piploc(p.instrument)))
+            print(f' POSITION SHORT BREAKEVEN')
+            for t in trades:
+                sl_price = avg_price - self.cfg.get_global_params()['be_sl'] * pow(10, self.cfg.get_piploc(p.instrument))
+                self.set_stoploss(t.id, sl_price, t.instrument)
 
-        for t in trades:
-            t.sl = self.cfg.get_order_by_id(t.stopLossOrderID)
-            
-        # ... 
+
+
 
     def rule_close_unbalanced_position(self, p):
         trades = self.cfg.get_trades_by_instrument(p.instrument)
