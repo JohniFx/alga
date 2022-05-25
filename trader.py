@@ -57,7 +57,7 @@ class Trader():
         # adjust ts
         # rule move common tp
         # rule position scale in
-        self.position_scale_in(p)
+        self.position_scale_in(position)
 
     def position_scale_in(self, p):
         # if long and  current_price > average_price
