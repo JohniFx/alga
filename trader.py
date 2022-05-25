@@ -130,7 +130,11 @@ class Trader():
     def rule_position_breakeven(self, inst:str):
         trades = self.cfg.get_trades_by_instrument(inst)
         for t in trades:
+            self.manage_trade(t)
+
+        for t in trades:
             t.sl = self.cfg.get_order_by_id(t.stopLossOrderID)
+            
         # ... 
 
     def rule_close_unbalanced_position(self, p):
