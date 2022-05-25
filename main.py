@@ -85,6 +85,7 @@ class Main(Cfg):
         print(msg)
 
     def close_similar_trade(self, data):
+        # TODO: 
         if data.type != 'ORDER_FILL':
             return
         reas = ['STOP_LOSS_ORDER', 'TRAILING_STOP_LOSS_ORDER']
@@ -92,8 +93,8 @@ class Main(Cfg):
             return
         if data.pl > 0:
             return
+        # single trade
         for t in self.account.trades:
-            # single trade
             if t.unrealizedPL > abs(data.pl):
                 self.ctx.trade.close(self.ACCOUNT_ID, t.id, units='ALL')
                 return
@@ -110,7 +111,6 @@ class Main(Cfg):
                     for trada in trades:
                         self.ctx.trade.close(self.ACCOUNT_ID, trada.id, units='ALL')
                     return
-
         print('NO replacement winning trade(s)')
 
     def on_account_changes(self):
