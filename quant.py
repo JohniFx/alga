@@ -173,9 +173,7 @@ class Quant():
     def get_signal(self, inst: str, count: int = 15, tf: str = 'M5', positioning: int = 0):
 
         df = self.get_candles(inst, count, tf)
-        if df.volume.iloc[-2:].mean() < 100:
-            print(f'{inst} low volume: {df.volume.iloc[-2:].mean():.2f}')
-            signal = dict(signal=0, signaltype='LV')
+        if df.volume.iloc[-2:].mean() < 90:
             return None
 
         self.add_hilo(df)
