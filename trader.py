@@ -46,7 +46,7 @@ class Trader():
     def manage_position(self, inst:str):
         position = self.cfg.get_position_by_instrument(inst)
         ap = position.long.averagePrice if position.long.units !=0 else position.short.averagePrice
-        print(inst, 'position:',  position.unrealizedPL, ap)
+        print(inst, f'position: pl:{position.unrealizedPL:.2f}')
 
         # rule balancing
         self.rule_close_unbalanced_position(position)
@@ -57,6 +57,11 @@ class Trader():
         # adjust ts
         # rule move common tp
         # rule position scale in
+        self.position_scale_in(p)
+
+    def position_scale_in(self, p):
+        # if long and  current_price > average_price
+        pass 
 
     def trade_breakeven(self, trade:v20.trade.TradeSummary):
         sl = self.cfg.get_order_by_id(trade.stopLossOrderID)
@@ -64,7 +69,7 @@ class Trader():
         c1 = trade.currentUnits > 0 and sl.price >= trade.price
         c2 = trade.currentUnits < 0 and sl.price <= trade.price
         if c1 or c2:
-            print(f'{trade.instrument} no be. trade in loss pl: {trade.unrealizedPL:.2f}')
+            #print(f'{trade.id} already in be. trade in loss pl: {trade.unrealizedPL:.2f}')
             return
         # test if eligible
         currentPrice = self.cfg.instruments[trade.instrument]
@@ -113,10 +118,13 @@ class Trader():
         trades = self.cfg.get_trades_by_instrument(p.instrument)
         avg_price = p.long.averagePrice if p.long.units !=0 else p.short.averagePrice
         units = p.long.units if p.long.units != 0 else p.short.units
+        scaled = False
         for t in trades:
             if t.unrealizedPL < 0:
                 return
-            self.manage_trade(t)
+            self.trade_breakeven(t)
+            self.trade_scale_in(t)
+
         current_price = self.cfg.instruments[p.instrument]
         if units > 0:
             current_price['bid'] > (avg_price + self.cfg.get_global_params()['be_pips']* pow(10, self.cfg.get_piploc(p.instrument)))
@@ -380,6 +388,8 @@ class Trader():
             tradeid,
             stopLoss=sl
         )
+        self.cfg.stats['count_be'] +=1
+        self.cfg.stats.dump()
 
     def initial_tradecheck(self):
         for t in self.cfg.account.trades:

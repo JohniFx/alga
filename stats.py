@@ -32,7 +32,8 @@ class Stat():
             sum_ts=0,
             sum_tp=0,
             count_manual=0,
-            sum_manual=0
+            sum_manual=0,
+            count_be = 0
         )
         return s
 
