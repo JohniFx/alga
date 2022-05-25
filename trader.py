@@ -48,7 +48,7 @@ class Trader():
         ap = position.long.averagePrice if position.long.units !=0 else position.short.averagePrice
         print(inst, f'pl:{position.unrealizedPL:.2f}')
 
-        trades = self.cfg.get_trades_by_instrument(p.instrument)
+        trades = self.cfg.get_trades_by_instrument(position.instrument)
         for t in trades:
             sl = self.cfg.get_order_by_id(t.stopLossOrderID)
             print(f'{t.currentUnits:>4.0f} @ {t.price:<8.4f} pl:{t.unrealizedPL:>7.2f} sl: {sl.price}')
