@@ -21,7 +21,7 @@ class Trader():
                 self.manage_position(inst)
             
     def manage_trade(self, t:v20.trade.TradeSummary):
-        print(t.instrument, f'trade: #{t.id} PL: {t.unrealizedPL:>6.2f}')
+        print(t.instrument, f'PL: {t.unrealizedPL:>6.2f}')
         # skip
         if t.unrealizedPL < 0:
             return
@@ -46,7 +46,13 @@ class Trader():
     def manage_position(self, inst:str):
         position = self.cfg.get_position_by_instrument(inst)
         ap = position.long.averagePrice if position.long.units !=0 else position.short.averagePrice
-        print(inst, f'position: pl:{position.unrealizedPL:.2f}')
+        print(inst, f'pl:{position.unrealizedPL:.2f}')
+
+        trades = self.cfg.get_trades_by_instrument(p.instrument)
+        for t in trades:
+            sl = self.cfg.get_order_by_id(t.stopLossOrderID)
+            print(f'{t.currentUnits:>4.0f} @ {t.price:<8.4f} pl:{t.unrealizedPL:>7.2f} sl: {sl.price}')
+
 
         # rule balancing
         self.rule_close_unbalanced_position(position)
@@ -139,12 +145,11 @@ class Trader():
                 sl_price = avg_price - self.cfg.get_global_params()['be_sl'] * pow(10, self.cfg.get_piploc(p.instrument))
                 self.set_stoploss(t.id, sl_price, t.instrument)
 
-    def rule_close_unbalanced_position(self, p):
+    def rule_close_unbalanced_position(self, p: v20.position.Position):
         trades = self.cfg.get_trades_by_instrument(p.instrument)
         ps = p.long if p.long.units !=0 else p.short
         losingtrades = 0
         for t in trades:
-            print(f'{t.currentUnits:>4.0f} @ {t.price:<8.4f} pl:{t.unrealizedPL:>7.2f}')
             if t.unrealizedPL < 0:
                 losingtrades += 1
         if p.unrealizedPL >= 0 and losingtrades > 2:
@@ -214,7 +219,7 @@ class Trader():
         return all(all_be)
 
     def check_instrument(self, inst: str, positioning: int = 0):
-        print(f'{inst} check. pos: {positioning}')
+        # print(f'{inst} check. pos: {positioning}')
         # get signal
         signal = quant.Quant(self.cfg).get_signal(inst, 15, 'M5', positioning)
         if signal is None:
