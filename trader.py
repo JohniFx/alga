@@ -46,7 +46,7 @@ class Trader():
     def manage_position(self, inst:str):
         position = self.cfg.get_position_by_instrument(inst)
         ap = position.long.averagePrice if position.long.units !=0 else position.short.averagePrice
-        print(inst, f'pl:{position.unrealizedPL:.2f}')
+        print(inst, f'pl:{position.unrealizedPL:.2f} avg_price: {ap}')
 
         trades = self.cfg.get_trades_by_instrument(position.instrument)
         for t in trades:
@@ -134,7 +134,7 @@ class Trader():
         current_price = self.cfg.instruments[p.instrument]
         if units > 0:
             current_price['bid'] > (avg_price + self.cfg.get_global_params()['be_pips']* pow(10, self.cfg.get_piploc(p.instrument)))
-            print(f' POSITION LONG BREAKEVEN')
+            print(f' POSITION LONG BREAKEVEN avg_price: {avg_price}')
             for t in trades:
                 sl_price = avg_price + self.cfg.get_global_params()['be_sl'] * pow(10, self.cfg.get_piploc(p.instrument))
                 self.set_stoploss(t.id, sl_price, t.instrument)
