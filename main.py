@@ -34,7 +34,7 @@ class Main(Cfg):
             q.update_kpi_file()
             time.sleep(60*30)
 
-    def run_check_instruments(self, n=120, iters=5):
+    def run_check_instruments(self, n=120, iters=15):
         for i in range(iters):
             print(f'\n{u.get_now()} ITER: {i} of {iters}')
             t = trader.Trader(self)
