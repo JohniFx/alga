@@ -64,7 +64,7 @@ class Main(Cfg):
             # print(data)
             return
 
-        # self.close_similar_trade(data)
+        self.close_similar_trade(data)
         self.stats.update(data)
 
         msg = f"{datetime.now().strftime('%H:%M:%S')}"
