@@ -395,8 +395,6 @@ class Trader():
             tradeid,
             stopLoss=sl
         )
-        self.cfg.stats['count_be'] +=1
-        self.cfg.stats.dump()
 
     def initial_tradecheck(self):
         for t in self.cfg.account.trades:
