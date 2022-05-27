@@ -94,7 +94,7 @@ class Main(Cfg):
         if data.pl > 0:
             return
         # single trade
-        self.account.trades.sort(key = lambda, trade: trade.unrealizedPL, reverse=True)
+        self.account.trades.sort(key = lambda trade: trade.unrealizedPL, reverse=True)
         for t in self.account.trades:
             if t.unrealizedPL > abs(data.pl):
                 self.ctx.trade.close(self.ACCOUNT_ID, t.id, units='ALL')
