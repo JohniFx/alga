@@ -22,7 +22,7 @@ class Main(Cfg):
         t1 = threading.Thread(target=self.update_kpi)
         t1.start()
 
-        t2 = threading.Thread(target=self.run_check_instruments)
+        t2 = threading.Thread(target=self.run_trading)
         t2.start()
 
 
@@ -34,7 +34,7 @@ class Main(Cfg):
             q.update_kpi_file()
             time.sleep(60*30)
 
-    def run_check_instruments(self, n=120, iters=15):
+    def run_trading(self, n=120, iters=15):
         for i in range(iters):
             print(f'\n{u.get_now()} ITER: {i} of {iters}')
             t = trader.Trader(self)
@@ -50,8 +50,15 @@ class Main(Cfg):
 
     def on_tick(self, cp):
         # TODO: breakeven check
+        # trades = list(self.get_trades_by_instrument(cp['i']))
+        # for t in trades:
+        #    trade_breakeven(t)
+
         # TODO: entry hunting
         pass
+
+    def tick_breakeven(self, inst):
+        #get trade
 
     def on_data_detailed(self, data):
         pass
