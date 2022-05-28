@@ -49,6 +49,8 @@ class Main(Cfg):
         self.restart()
 
     def on_tick(self, cp):
+        # TODO: breakeven check
+        # TODO: entry hunting
         pass
 
     def on_data_detailed(self, data):
