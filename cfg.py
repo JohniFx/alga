@@ -9,6 +9,7 @@ import utils as u
 
 class Cfg(object):
     threads = []
+    ti=[]
 
     def __init__(self):
         #
@@ -37,8 +38,16 @@ class Cfg(object):
         for t in self.threads:
             t.start()
         #
-        insts = self.ctx.account.instruments(self.ACCOUNT_ID).get('instruments')
-        self.instruments = {i.name: i.dict() for i in insts}
+        _insts_csv = ','.join(self.get_tradeable_instruments()[:20])
+        _insts = self.ctx.account.instruments(self.ACCOUNT_ID, instruments=_insts_csv).get('instruments')
+        self.instruments = {i.name: i.dict() for i in _insts}
+
+    def get_instruments():
+        # query from server
+        # save as json
+        # load from json
+        # check margin requirements
+        pass
 
     def restart(self):
         import os
@@ -50,7 +59,6 @@ class Cfg(object):
         response = self.ctx.account.get(self.ACCOUNT_ID)
         return response.get('account')
 
-    ti=[]
     def get_tradeable_instruments(self):
         if len(self.ti) == 0:
             self.ti = [
@@ -70,8 +78,8 @@ class Cfg(object):
             sl=12,
             ts=15,
             max_spread=3,
-            be_pips=12,
-            be_sl=3)
+            be_trigger=12,
+            be_level=3)
         return global_params
 
     def notify_price_observers(self, cp):
@@ -98,17 +106,20 @@ class Cfg(object):
                         bid=data.bids[0].price,
                         ask=data.asks[0].price)
                     self.notify_price_observers(cp)
-                    self.instruments[data.instrument]['bid'] = data.bids[0].price
-                    self.instruments[data.instrument]['ask'] = data.asks[0].price
-                    self.instruments[data.instrument]['spread'] = round(
-                        data.asks[0].price-data.bids[0].price,
-                        self.instruments[data.instrument]['displayPrecision'])
+                    self.update_instrument(data)
         except ValueError as e:
             print('ValueError in pricestream', e)
         except Exception as e:
             print('Exception in price stream, RESTART', e)
             time.sleep(5)
             self.restart()
+
+    def update_instrument(self, data:dict):
+        self.instruments[data.instrument]['bid'] = data.bids[0].price
+        self.instruments[data.instrument]['ask'] = data.asks[0].price
+        self.instruments[data.instrument]['spread'] = round(
+                data.asks[0].price-data.bids[0].price,
+                self.instruments[data.instrument]['displayPrecision'])
 
     def run_transaction_stream(self):
         print('start transaction stream')
