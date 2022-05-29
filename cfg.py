@@ -43,7 +43,7 @@ class Cfg(object):
         self.instruments = {i.name: i.dict() for i in _insts}
 
     def get_instruments():
-        # query from server
+        # TODO: query from server
         # save as json
         # load from json
         # check margin requirements
@@ -204,6 +204,9 @@ class Cfg(object):
     def apply_changes(self, changes: v20.account.AccountChanges):
         # Trades Opened
         for to in changes.tradesOpened:
+            to.isLong = False
+            if to.currentUnits > 0:
+                to.isLong = True
             self.account.trades.append(to)
         # Trades Reduced
         for tr in changes.tradesReduced:

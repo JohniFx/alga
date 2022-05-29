@@ -53,12 +53,7 @@ class Main(Cfg):
 
     def on_tick(self, cp):
         # TODO: breakeven check
-        for wi in watchlist:
-            if wi['inst'] == cp['inst']:
-                if wi['trade'].currentUnits>0 and (cp['bid'] > wi['be_long_trigger']):
-                    self.t.set_stoploss(wi['trade'], wi['be_long_level'])
-                if cp['ask'] < wi['be_short_trigger']:
-                    self.t.set_stoploss(wi['trade'], wi['be_short_level'])
+        pass
 
     def tick_breakeven(self, inst):
         #get trade
