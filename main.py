@@ -10,6 +10,8 @@ from stats import Stat
 __version__ = '2022-05-17'
 
 class Main(Cfg):
+    watchlist = []
+
     def __init__(self) -> None:
         super().__init__()
         self.stats = Stat()
@@ -18,6 +20,7 @@ class Main(Cfg):
         self.account_observers.append(self)
         time.sleep(4)
 
+        self.t = trader.Trader(self)
         self.print_account()
         t1 = threading.Thread(target=self.update_kpi)
         t1.start()
@@ -37,7 +40,6 @@ class Main(Cfg):
     def run_trading(self, n=120, iters=15):
         for i in range(iters):
             print(f'\n{u.get_now()} ITER: {i} of {iters}')
-            t = trader.Trader(self)
             t.manage_trading()
             # threading.Thread(target=t.do_trading).start()
             # threading.Thread(target=t.manage_trading).start()
@@ -48,14 +50,15 @@ class Main(Cfg):
             time.sleep(n)
         self.restart()
 
+
     def on_tick(self, cp):
         # TODO: breakeven check
-        # trades = list(self.get_trades_by_instrument(cp['i']))
-        # for t in trades:
-        #    trade_breakeven(t)
-
-        # TODO: entry hunting
-        pass
+        for wi in watchlist:
+            if wi['inst'] == cp['inst']:
+                if wi['trade'].currentUnits>0 and (cp['bid'] > wi['be_long_trigger']):
+                    self.t.set_stoploss(wi['trade'], wi['be_long_level'])
+                if cp['ask'] < wi['be_short_trigger']:
+                    self.t.set_stoploss(wi['trade'], wi['be_short_level'])
 
     def tick_breakeven(self, inst):
         #get trade
