@@ -8,7 +8,6 @@ class Trader():
     def __init__(self, cfg) -> None:
         self.cfg = cfg
         self.initial_tradecheck()
-        self.hot_insts = []
 
     def manage_trading(self):
         for inst in self.cfg.get_tradeable_instruments():
@@ -19,7 +18,17 @@ class Trader():
                 self.manage_trade(trades[0])
             if len(trades) > 1:
                 self.manage_position(inst)
-            
+                
+    def create_watchitem(self, trade):
+        
+        watchitem = dict(
+            trade = trade,
+            inst = trade.instrument,
+            be_long_trigger= ,
+            be_long_level=,
+            be_short_trigger=
+            be_short_level= )
+
     def manage_trade(self, t:v20.trade.TradeSummary):
         print(t.instrument, f'PL: {t.unrealizedPL:>6.2f}')
         if t.unrealizedPL < 0:
@@ -360,10 +369,7 @@ class Trader():
         else:
             self.cfg.ctx.trade.close(self.cfg.ACCOUNT_ID, trade.id, units=str(units))
 
-    def check_before_stopmove(self, tradeid: int, new_sl: float):
-        t = self.cfg.get_trade_by_id(tradeid)
-        if t is None:
-            return False
+    def check_before_stopmove(self, t: v20.trade.TradeSummary, new_sl: float):
         sl = self.cfg.get_order_by_id(t.stopLossOrderID)
         if t.currentUnits > 0 and sl.price > new_sl:
             print(f'FAIL: {t.currentUnits} sl.price: {sl.price} > new_sl:{new_sl:.5f}')
@@ -374,7 +380,7 @@ class Trader():
         return True
 
     def set_stoploss(self, trade: v20.trade.TradeSummary, sl_price: float):
-        if not self.check_before_stopmove(trade.id, trade.price):
+        if not self.check_before_stopmove(trade, sl_price):
             print(f'Pre stop move check fails: #{trade.id}')
             return
         dp = self.cfg.instruments[trade.instrument]['displayPrecision']

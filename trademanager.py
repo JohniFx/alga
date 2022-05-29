@@ -9,9 +9,14 @@ import curses
 import schedule
 import utils
 
+def outer_method():
+    print('this is a very long text which may need', 'wordwrap in order to show that', 'long text in multiple lines', 'we will .. and so it is')
+
+
 # test
 class TradeManager():
     def __init__(self, ctx):
+
         self.messages = []
         self.ctx = ctx
         self.accountid = defs.ACCOUNT_ID
@@ -231,7 +236,6 @@ class TradeManager():
         for field in state.fields():
             self.update_attribute(self.account, field.name, field.value)
 
-
     def get_open_positions(self):
         openpos = []
         for p in self.account.positions:
@@ -302,7 +306,6 @@ class TradeManager():
             return
         if hasattr(dest, name) and getattr(dest, name) is not None:
             setattr(dest, name, value)
-
 
 if __name__ == '__main__':
     ctx = v20.Context(hostname='api-fxpractice.oanda.com', token=defs.key)

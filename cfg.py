@@ -102,7 +102,7 @@ class Cfg(object):
             for typ, data in response.parts():
                 if typ == "pricing.ClientPrice":
                     cp = dict(
-                        i=data.instrument,
+                        inst=data.instrument,
                         bid=data.bids[0].price,
                         ask=data.asks[0].price)
                     self.notify_price_observers(cp)
