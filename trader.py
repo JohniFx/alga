@@ -87,19 +87,22 @@ class Trader():
             self.trade_breakeven(t)
             self.trade_scalein(t)
 
+        be_trigger_offset = self.cfg.get_global_params()['be_trigger'] * pow(10, self.cfg.get_piploc(p.instrument))
+        be_level_offset   = self.cfg.get_global_params()['be_level']   * pow(10, self.cfg.get_piploc(p.instrument))
+
         current_price = self.cfg.instruments[p.instrument]
         if units > 0:
-            current_price['bid'] > (avg_price + self.cfg.get_global_params()['be_pips']* pow(10, self.cfg.get_piploc(p.instrument)))
+            current_price['bid'] > (avg_price + be_trigger_offset)
             print(f' POSITION LONG BREAKEVEN avg_price: {avg_price} bid: {current_price["bid"]}')
             for t in trades:
-                sl_price = avg_price + self.cfg.get_global_params()['be_sl'] * pow(10, self.cfg.get_piploc(p.instrument))
+                sl_price = avg_price + be_level_offset
                 print(sl_price, t.id, )
                 self.set_stoploss(t, sl_price)
         if units < 0:
-            current_price['ask'] < (avg_price - self.cfg.get_global_params()['be_pips']* pow(10, self.cfg.get_piploc(p.instrument)))
+            current_price['ask'] < (avg_price - be_trigger_offset)
             print(f' POSITION SHORT BREAKEVEN')
             for t in trades:
-                sl_price = avg_price - self.cfg.get_global_params()['be_sl'] * pow(10, self.cfg.get_piploc(p.instrument))
+                sl_price = avg_price - be_level_offset
                 self.set_stoploss(t, sl_price)
 
     def position_close_unbalanced(self, p: v20.position.Position):
@@ -134,29 +137,13 @@ class Trader():
         signal = self.get_signal(inst, pos)
         if signal is None:
             return
-
-        # pre-trade
         units = int(self.cfg.account.marginAvailable/100) * signal['signal']
-        sl = self.cfg.get_global_params()['sl']
-        tp = self.cfg.get_global_params()['tp']
-        
         spread = self.cfg.instruments[inst]['spread']
         piploc = pow(10, self.cfg.get_piploc(inst))
-        #
         spread_piploc = spread / piploc
         if spread_piploc > self.cfg.get_global_params()['max_spread']:
             return
-        #
-        entry = ask if signal['signal'] == 1 else bid
-        stopprice = entry - signal['signal'] * sl * piploc
-        profitPrice = entry + signal['signal'] * tp * piploc
-        #
-        msg = (f' {inst} OPEN {signal["signaltype"]} '
-               f' {units}'
-               f' {entry:.5f}'
-               f' {spread:>6.5f}')
-        print(msg)
-        self.place_market(inst, units, stopprice, profitPrice, 'S3', signal['ts_dist'])
+        self.place_market(inst, units)
     
     def get_signal(self, inst, pos):
         signal = quant.Quant(self.cfg).get_signal(inst, 15, 'M5', pos)
@@ -178,8 +165,9 @@ class Trader():
                 return False
         return True
 
-    def place_market(self, inst, units, sl_price, tp_price=None, signaltype='0', ts_dist=0):
+    def place_market(self, inst, units, sl_price=None, tp_price=None, signaltype=None, ts_dist=None):
         prec = self.cfg.instruments[inst]['displayPrecision']
+        units = f'{units:.{self.cfg.instruments[inst]["tradeUnitsPrecision"]}f}'
         
         gp_sl = self.cfg.get_global_params()['sl'] * pow(10, self.cfg.get_piploc(inst))
         gp_ts = self.cfg.get_global_params()['ts'] * pow(10, self.cfg.get_piploc(inst))
@@ -205,17 +193,21 @@ class Trader():
             type='MARKET',
             instrument=inst,
             units=units,
-            clientExtensions=ce,
+            #clientExtensions=ce,
             takeProfitOnFill=tp_on_fill,
             stopLossOnFill=sl_on_fill,
             trailingStopLossOnFill=ts_on_fill
         )
         response = self.cfg.ctx.order.market(self.cfg.ACCOUNT_ID, **order)
         try:
-            id = response.get('orderFillTransaction').id
+            response.get('orderFillTransaction')
         except v20.errors.ResponseNoField as x:
             print(x)
             print(response)
+            print('')
+            for b in response.body:
+                print(response.get(b))
+                print('')
 
     def place_limit(self, inst, units, entryPrice, stopPrice, profitPrice):
         prec = self.cfg.instruments[inst]['displayPrecision']
