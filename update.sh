@@ -2,9 +2,9 @@
 
 git status
 
-git add .
+git add *.py
 
-git commit -m "lnx update"
+git commit -m "maci update"
 
 git pull alga
 

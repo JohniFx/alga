@@ -124,14 +124,14 @@ class Cfg(object):
     def run_transaction_stream(self):
         print('start transaction stream')
         response = self.ctxs.transaction.stream(self.ACCOUNT_ID)
-        # try:
-        for t, d in response.parts():
-            if d.type != "HEARTBEAT":
-                self.notify_transaction_observers(d)
-        # except Exception as e:
-            # print('Transaction stream crashed. RESTART', e, d)
-            # time.sleep(5)
-            # self.restart()
+        try:
+            for t, d in response.parts():
+                if d.type != "HEARTBEAT":
+                    self.notify_transaction_observers(d)
+        except Exception as e:
+            print('Transaction stream crashed. RESTART', e, d)
+            time.sleep(5)
+            self.restart()
 
     def run_account_update(self):
         print('start account polling')

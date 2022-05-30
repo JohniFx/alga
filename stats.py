@@ -33,7 +33,9 @@ class Stat():
             sum_tp=0,
             count_manual=0,
             sum_manual=0,
-            count_be = 0
+            count_be = 0,
+            count_pos_closout=0,
+            sum_pos_closout=0
         )
         return s
 
@@ -50,6 +52,9 @@ class Stat():
         elif data.reason == 'MARKET_ORDER_TRADE_CLOSE':
             self.s['count_manual'] += 1
             self.s['sum_manual'] += data.pl
+        elif data.reason == 'MARKET_ORDER_POSITION_CLOSEOUT':
+            self.s['count_pos_closout'] += 1
+            self.s['sum_pos_closout'] += data.pl
         self.dump()
 
     def dump(self):

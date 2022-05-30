@@ -54,6 +54,7 @@ class Trader():
             if price > (trade.price + be_trigger_offset):
                 sl_price = trade.price + be_level_offset
                 self.set_stoploss(trade, sl_price)
+                
 
         if trade.currentUnits < 0:
             price = self.cfg.instruments[trade.instrument]['ask']
