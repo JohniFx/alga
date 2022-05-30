@@ -182,6 +182,7 @@ class Trader():
         
         gp_sl = self.cfg.get_global_params()['sl'] * pow(10, self.cfg.get_piploc(inst))
         gp_ts = self.cfg.get_global_params()['ts'] * pow(10, self.cfg.get_piploc(inst))
+        gp_tp = self.cfg.get_global_params()['tp'] * pow(10, self.cfg.get_piploc(inst))
 
         sl_on_fill = dict(
             timeInForce='GTC', 
@@ -190,7 +191,8 @@ class Trader():
 
         tp_on_fill = dict(
             timeInForce='GTC', 
-            price=f'{tp_price:.{prec}f}')
+            #price=f'{tp_price:.{prec}f}',
+            distance=f'{gp_tp:.{prec}f}')
 
         ts_on_fill = dict(
             timeInForce='GTC', 

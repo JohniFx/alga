@@ -57,7 +57,8 @@ class Main(Cfg):
 
     def tick_breakeven(self, inst):
         #get trade
-
+        pass
+    
     def on_data_detailed(self, data):
         pass
 
