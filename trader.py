@@ -159,12 +159,13 @@ class Trader():
         self.place_market(inst, units, stopprice, profitPrice, 'S3', signal['ts_dist'])
     
     def get_signal(self, inst, pos):
-        signal = quant.Quant(self.cfg).get_signal(inst, 15, 'M5', positioning)
+        signal = quant.Quant(self.cfg).get_signal(inst, 15, 'M5', pos)
         if signal is None:
             return None
         valid = [(-1, -1), (-1, 0), (1, 0), (1, 1)]
-        if (signal['signal'], positioning) not in valid:
+        if (signal['signal'], pos) not in valid:
             return None
+        return signal
 
     def is_trade_allowed(self) -> bool:
         h = datetime.datetime.now().hour
