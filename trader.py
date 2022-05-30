@@ -85,7 +85,7 @@ class Trader():
             if t.unrealizedPL < 0:
                 return
             self.trade_breakeven(t)
-            self.trade_scale_in(t)
+            self.trade_scalein(t)
 
         current_price = self.cfg.instruments[p.instrument]
         if units > 0:
