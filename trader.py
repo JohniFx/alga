@@ -22,7 +22,8 @@ class Trader():
                 self.manage_position(inst)
 
     def manage_trade(self, t:v20.trade.TradeSummary):
-        print(t.instrument, f'PL: {t.unrealizedPL:>6.2f}')
+        sl = self.cfg.get_order_by_id(t.stopLossOrderID)
+        print(t.instrument, f'PL: {t.unrealizedPL:>6.2f} E: {t.price} sl: {sl.price}')
         if t.unrealizedPL < 0:
             return
         self.trade_breakeven(t)

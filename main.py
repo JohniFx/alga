@@ -28,7 +28,6 @@ class Main(Cfg):
         t2 = threading.Thread(target=self.run_trading)
         t2.start()
 
-
     def update_kpi(self):
         while True:
             q = quant.Quant(self)
@@ -49,7 +48,6 @@ class Main(Cfg):
             n = 300 if h >= 22 or h <= 8 else 120
             time.sleep(n)
         self.restart()
-
 
     def on_tick(self, cp):
         # TODO: breakeven check
@@ -101,12 +99,14 @@ class Main(Cfg):
             return
         if data.pl > 0:
             return
+
         # single trade
-        self.account.trades.sort(key = lambda trade: trade.unrealizedPL, reverse=True)
         for t in self.account.trades:
             if t.unrealizedPL > abs(data.pl):
+                # TODO:  normalis loggolas kell
                 self.ctx.trade.close(self.ACCOUNT_ID, t.id, units='ALL')
                 return
+
         # multiple trades
         sum_unrealized = 0
         trade_ids = []
