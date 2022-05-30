@@ -4,7 +4,7 @@ git status
 
 git add .
 
-git commit -m "maci update"
+git commit -m "lnx update"
 
 git pull alga
 
