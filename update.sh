@@ -9,5 +9,3 @@ git commit -m "maci update"
 git pull alga
 
 git push 
-
-
