@@ -40,7 +40,7 @@ class Main(Cfg):
     def run_trading(self, n=120, iters=15):
         for i in range(iters):
             print(f'\n{u.get_now()} ITER: {i} of {iters}')
-            t.manage_trading()
+            self.t.manage_trading()
             # threading.Thread(target=t.do_trading).start()
             # threading.Thread(target=t.manage_trading).start()
             self.stats.show()
