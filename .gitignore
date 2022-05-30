@@ -2,13 +2,12 @@ keys.py
 config.ini
 defs.py
 data/*
-kpi_data.json
 .vscode
 __pycache__/*
 /__pycache__
-.ipynb*
 .ipynb_checkpoints/*
 notebook/__pycache__/*
-update.sh
+*.sh
 *.json
 *.sublime*
+*.ipynb*
