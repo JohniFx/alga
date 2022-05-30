@@ -85,25 +85,25 @@ class Trader():
             if t.unrealizedPL < 0:
                 return
             self.trade_breakeven(t)
-            self.trade_scalein(t)
 
         be_trigger_offset = self.cfg.get_global_params()['be_trigger'] * pow(10, self.cfg.get_piploc(p.instrument))
         be_level_offset   = self.cfg.get_global_params()['be_level']   * pow(10, self.cfg.get_piploc(p.instrument))
 
         current_price = self.cfg.instruments[p.instrument]
-        if units > 0:
-            current_price['bid'] > (avg_price + be_trigger_offset)
+        if units > 0 and (current_price['bid'] > (avg_price + be_trigger_offset)):
             print(f' POSITION LONG BREAKEVEN avg_price: {avg_price} bid: {current_price["bid"]}')
             for t in trades:
                 sl_price = avg_price + be_level_offset
                 print(sl_price, t.id, )
                 self.set_stoploss(t, sl_price)
-        if units < 0:
-            current_price['ask'] < (avg_price - be_trigger_offset)
+                self.check_instrument(p.instrument)
+        elif units < 0 and (current_price['ask'] < (avg_price - be_trigger_offset)):
             print(f' POSITION SHORT BREAKEVEN')
             for t in trades:
                 sl_price = avg_price - be_level_offset
                 self.set_stoploss(t, sl_price)
+                self.check_instrument(p.instrument)
+
 
     def position_close_unbalanced(self, p: v20.position.Position):
         trades = self.cfg.get_trades_by_instrument(p.instrument)
