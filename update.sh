@@ -8,4 +8,4 @@ git commit -m "lnx update"
 
 git pull alga
 
-git push 
+git push alga main 
