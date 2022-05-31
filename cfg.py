@@ -129,9 +129,9 @@ class Cfg(object):
                 if d.type != "HEARTBEAT":
                     self.notify_transaction_observers(d)
         except Exception as e:
-            print('Transaction stream crashed. RESTART', e, d)
+            print('Transaction stream crashed. RESTART stream only!', e, d)
             time.sleep(5)
-            self.restart()
+            self.run_transaction_stream()
 
     def run_account_update(self):
         print('start account polling')

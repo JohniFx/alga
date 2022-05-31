@@ -23,7 +23,7 @@ class Trader():
 
     def manage_trade(self, t:v20.trade.TradeSummary):
         sl = self.cfg.get_order_by_id(t.stopLossOrderID)
-        print(t.instrument, f'PL: {t.unrealizedPL:>6.2f} E: {t.price} sl: {sl.price}')
+        print(t.instrument, f'PL: {t.unrealizedPL:>6.2f} E: {t.price:>6} sl: {sl.price:>6}')
         if t.unrealizedPL < 0:
             return
         self.trade_breakeven(t)
@@ -106,7 +106,6 @@ class Trader():
                 self.set_stoploss(t, sl_price)
                 self.check_instrument(p.instrument)
 
-
     def position_close_unbalanced(self, p: v20.position.Position):
         trades = self.cfg.get_trades_by_instrument(p.instrument)
         ps = p.long if p.long.units !=0 else p.short
@@ -131,8 +130,19 @@ class Trader():
             print(f'. {t.currentUnits:>4.0f} @ {t.price:<8.4f} pl:{t.unrealizedPL:>7.2f} sl: {sl.price}')
 
     def position_scalein(self, p):
-        # TODO: if long and  current_price > average_price
-        pass 
+        # all trade in be
+        trades = self.cfg.get_trades_by_instrument(p.instrument)
+        for t in trades:
+            sl = self.cfg.get_order_by_id(t.stopLossOrderID)
+            if t.currentUnits > 0 and (sl.price < t.price):
+                return
+            if t.currentUnits < 0 and (sl.price > t.price):
+                return
+        #
+        pos = 1  if p.long.units != 0 else -1
+        print('POSITION SCALE-IN')
+        self.check_instrument(p.instrument, pos)
+
 
     def check_instrument(self, inst: str, pos: int = 0):
         # print(f'{inst} check. pos: {positioning}')

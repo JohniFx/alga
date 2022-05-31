@@ -7,7 +7,8 @@ __pycache__/*
 /__pycache__
 .ipynb_checkpoints/*
 notebook/__pycache__/*
-.update.sh
+
+*.sh
 *.json
 *.sublime*
 *.ipynb*
