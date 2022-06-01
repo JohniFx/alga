@@ -2,7 +2,7 @@ import utils as u
 import quant
 import datetime
 import v20
-
+ 
 
 class Trader():
     def __init__(self, cfg) -> None:
@@ -10,7 +10,7 @@ class Trader():
         self.initial_tradecheck()
 
     def manage_trading(self):
-        if self.cfg.account.unrealizedPL > 25:
+        if self.cfg.account.unrealizedPL > 35:
             self.close_all()
         for inst in self.cfg.get_tradeable_instruments():
             trades = list(self.cfg.get_trades_by_instrument(inst))
@@ -23,7 +23,8 @@ class Trader():
 
     def manage_trade(self, t:v20.trade.TradeSummary):
         sl = self.cfg.get_order_by_id(t.stopLossOrderID)
-        print(t.instrument, f'PL: {t.unrealizedPL:>6.2f} E: {t.price:>6} sl: {sl.price:>6}')
+        ts = self.cfg.get_order_by_id(t.trailingStopLossOrderID)
+        print(t.instrument, f'{t.currentUnits:>5.0f} PL:{t.unrealizedPL:>6.2f} E: {t.price:>8.4f} sl: {sl.price:>8.4f} ts:{ts.trailingStopValue}')
         if t.unrealizedPL < 0:
             return
         self.trade_breakeven(t)
@@ -66,10 +67,8 @@ class Trader():
     def trade_scalein(self, t: v20.trade.TradeSummary):
         sl = self.cfg.get_order_by_id(t.stopLossOrderID)
         if t.currentUnits > 0 and (sl.price > t.price):
-            print('TRADE Scale in long ')
             self.check_instrument(t.instrument, 1)
         if t.currentUnits < 0 and (sl.price < t.price):
-            print('TRADE Scale in short')
             self.check_instrument(t.instrument, -1)
     
     def position_move_ts(self, p: v20.position.Position):
@@ -143,7 +142,6 @@ class Trader():
         print('POSITION SCALE-IN')
         self.check_instrument(p.instrument, pos)
 
-
     def check_instrument(self, inst: str, pos: int = 0):
         # print(f'{inst} check. pos: {positioning}')
         signal = self.get_signal(inst, pos)
@@ -155,7 +153,15 @@ class Trader():
         spread_piploc = spread / piploc
         if spread_piploc > self.cfg.get_global_params()['max_spread']:
             return
-        self.place_market(inst, units)
+        id = self.place_market(inst, units)
+        self.save_plot(signal['df'], id)
+
+    def save_plot(self, df, trade_id):
+        
+        print('saving plot', trade_id)
+
+
+
     
     def get_signal(self, inst, pos):
         signal = quant.Quant(self.cfg).get_signal(inst, 15, 'M5', pos)
@@ -212,7 +218,7 @@ class Trader():
         )
         response = self.cfg.ctx.order.market(self.cfg.ACCOUNT_ID, **order)
         try:
-            response.get('orderFillTransaction')
+            id = response.get('orderFillTransaction').id
         except v20.errors.ResponseNoField as x:
             print(x)
             print(response)
@@ -220,6 +226,7 @@ class Trader():
             for b in response.body:
                 print(response.get(b))
                 print('')
+        return id
 
     def place_limit(self, inst, units, entryPrice, stopPrice, profitPrice):
         prec = self.cfg.instruments[inst]['displayPrecision']
@@ -304,4 +311,3 @@ class Trader():
 if __name__ == '__main__':
     import main
     t = Trader(main.Main())
-    t.check_instruments()
