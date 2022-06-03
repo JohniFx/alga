@@ -74,11 +74,11 @@ class Cfg(object):
 
     def get_global_params(self):
         global_params = dict(
-            tp=35,
+            tp=55,
             sl=12,
-            ts=15,
+            ts=12,
             max_spread=3,
-            be_trigger=12,
+            be_trigger=10,
             be_level=3)
         return global_params
 

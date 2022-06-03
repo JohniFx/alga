@@ -36,7 +36,7 @@ class Main(Cfg):
             q.update_kpi_file()
             time.sleep(60*30)
 
-    def run_trading(self, n=120, iters=15):
+    def run_trading(self, n=120, iters=5):
         for i in range(iters):
             print(f'\n{u.get_now()} ITER: {i} of {iters}')
             self.t.manage_trading()
@@ -56,7 +56,7 @@ class Main(Cfg):
     def tick_breakeven(self, inst):
         #get trade
         pass
-    
+
     def on_data_detailed(self, data):
         pass
 
