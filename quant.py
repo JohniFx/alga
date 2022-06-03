@@ -170,7 +170,7 @@ class Quant():
             # print(f'ask high: {df.ask_h.iloc[-5:].max()} bid_c:{df.bid_c.iloc[-1]}')
         return extreme_distance
 
-    def get_signal(self, inst: str, count: int = 15, tf: str = 'M5', positioning: int = 0):
+    def get_signal(self, inst: str, count: int=15, tf: str='M5', pos: int=0):
 
         df = self.get_candles(inst, count, tf)
         if df.volume.iloc[-2:].mean() < 90:
@@ -225,10 +225,14 @@ class Quant():
             stop_level=1,
             stop_dist=1,
             ts_dist=self.get_extreme_distance(df, s3),
-            volume=df.volume.iloc[-1]
+            volume=df.volume.iloc[-1],
+            df = df
         )
 
         return signal
+
+    def save_plot(df):
+        pass
 
 
 if __name__ == "__main__":
