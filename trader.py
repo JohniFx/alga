@@ -137,31 +137,31 @@ class Trader():
                 return
             if t.currentUnits < 0 and (sl.price > t.price):
                 return
-        #
         pos = 1  if p.long.units != 0 else -1
         print('POSITION SCALE-IN')
         self.check_instrument(p.instrument, pos)
 
     def check_instrument(self, inst: str, pos: int = 0):
         # print(f'{inst} check. pos: {positioning}')
+        if not self.check_spread(inst):
+            return
         signal = self.get_signal(inst, pos)
         if signal is None:
             return
         units = int(self.cfg.account.marginAvailable/100) * signal['signal']
+        id = self.place_market(inst, units)
+        self.save_plot(signal['df'], id)
+
+    def check_spread(self, inst)->bool:
         spread = self.cfg.instruments[inst]['spread']
         piploc = pow(10, self.cfg.get_piploc(inst))
         spread_piploc = spread / piploc
         if spread_piploc > self.cfg.get_global_params()['max_spread']:
-            return
-        id = self.place_market(inst, units)
-        self.save_plot(signal['df'], id)
+            return False
+        return True
 
-    def save_plot(self, df, trade_id):
-        
+    def save_plot(self, df, trade_id):    
         print('saving plot', trade_id)
-
-
-
     
     def get_signal(self, inst, pos):
         signal = quant.Quant(self.cfg).get_signal(inst, 15, 'M5', pos)
