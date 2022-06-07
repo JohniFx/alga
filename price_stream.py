@@ -1,4 +1,6 @@
 from mimetypes import init
+from queue import Queue
+import random
 import threading
 import configparser
 import requests
@@ -6,6 +8,7 @@ import json
 from dateutil import parser
 import copy
 import time
+
 
 from log_wrapper import LogWrapper
 instruments = ['EUR_USD', 'EUR_AUD', 'GBP_USD', 'USD_JPY', 'EUR_CAD']
@@ -26,7 +29,7 @@ class LivePrice():
         )
 
     def __repr__(self):
-        return f"LivePrice() {self.instrument} {self.ask} {self.bid} {self.time}"
+        return f"LivePrice: {self.instrument} {self.ask} {self.bid} {self.time}"
 
 class StreamBase(threading.Thread):
     def __init__(self, events, prices, lock, logname) -> None:
@@ -80,9 +83,10 @@ class PriceStream(StreamBase):
                     self.update_live_price(LivePrice(dp))
 
 class PriceProcessor(StreamBase):
-    def __init__(self, events, prices, lock, logname, inst) -> None:
+    def __init__(self, events, prices, lock, logname, inst, work_queue:Queue) -> None:
         super().__init__(events, prices, lock, logname)
         self.inst = inst
+        self.work_queue = work_queue
     
     def process_price(self):
         price = None
@@ -97,9 +101,14 @@ class PriceProcessor(StreamBase):
         
         if price is None:
              self.log.logger.error("Price is none")
-        print(f' thread {self.ident} processing price:', price)
-        time.sleep(2)
-        print('processing price complete', price)
+        print(f'  thread {self.ident} processing price:', price)
+        time.sleep(random.randint(2,5))
+        print(f'  thread {self.ident} processing price complete', price)
+        if random.randint(2,5) == 3:
+            print(f'... NEW WORK added to workQueue')
+            price.job = 'BUY'
+            self.work_queue.put(price)
+
 
     def run(self):
         while True:
@@ -107,11 +116,26 @@ class PriceProcessor(StreamBase):
             self.process_price()
             self.events[self.inst].clear()
 
+class WorkProcessor(threading.Thread):
+    def __init__(self, work_queue: Queue) -> None:
+        super().__init__()
+        self.work_queue = work_queue
+        self.log = LogWrapper('WorkProcessor')
+
+    def run(self):
+        while True:
+            item = self.work_queue.get()
+            print('>>>>', item.job)
+            self.log.logger.debug(f'new work: {item}')
+            time.sleep(5)
+
+
 if __name__ == '__main__':
     import price_processor
     events = {}
     prices = {}
     lock = threading.Lock()
+    work_queue = Queue()
 
     for i in instruments:
         events[i] = threading.Event()
@@ -122,9 +146,14 @@ if __name__ == '__main__':
     ps.daemon = True
     threads.append(ps)
     ps.start()
+ 
+    wp = WorkProcessor(work_queue)
+    wp.daemon = True
+    threads.append(wp)
+    wp.start()
 
     for i in instruments:
-        t = PriceProcessor(events, prices, lock, f"LOG_{i}", i)
+        t = PriceProcessor(events, prices, lock, f"LOG_{i}", i, work_queue)
         t.daemon = True
         threads.append(t)
         t.start()
