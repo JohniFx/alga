@@ -50,8 +50,6 @@ class PriceStream(StreamBase):
         self.SECURE_HEADER = {
             "Authorization": f"Bearer {config['OANDA2']['API_KEY']}",
             "Content-Type": "application/json"}
-
-
         self.insts = prices.keys()
         print(self.insts)
         self.log = LogWrapper(logname)
@@ -101,9 +99,9 @@ class PriceProcessor(StreamBase):
              self.log.logger.error("Price is none")
         print(f'  thread {self.ident} processing price:', price)
         time.sleep(random.randint(2,7))
-        print(f'  thread {self.ident} processing price complete', price)
-        if random.randint(2,6) == 3:
-            print(f'... NEW WORK added to workQueue')
+        print(f'  thread {self.ident} processing complete {price}')
+        if random.randint(2,5) == 3:
+            print('new work added to queue')
             price.job = 'BUY'
             self.work_queue.put(price)
 
@@ -122,10 +120,16 @@ class WorkProcessor(threading.Thread):
 
     def run(self):
         while True:
+            print(f'Queue Size: {self.work_queue.qsize()}')
             item = self.work_queue.get()
-            print('>>>>', item.job)
-            self.log.logger.debug(f'new work: {item}')
-            time.sleep(5)
+            print(f'working on item: {item.job} {item.instrument}')
+            # self.log.logger.debug(f'new work: {item}')
+            if self.work_queue.qsize()>100:
+                time.sleep(1)
+            else:
+                time.sleep(4)
+            print(f'completed item: {item.job} {item.instrument}')
+
 
 
 if __name__ == '__main__':
