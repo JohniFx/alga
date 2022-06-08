@@ -1,4 +1,3 @@
-from mimetypes import init
 from queue import Queue
 import random
 import threading
@@ -8,8 +7,6 @@ import json
 from dateutil import parser
 import copy
 import time
-
-
 from log_wrapper import LogWrapper
 instruments = ['EUR_USD', 'EUR_AUD', 'GBP_USD', 'USD_JPY', 'EUR_CAD', 'AUD_USD', 'AUD_JPY', 'AUD_CAD', 'GBP_AUD',
                'GBP_JPY','GBP_CAD','EUR_CHF', 'EUR_JPY']
