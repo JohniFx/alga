@@ -36,6 +36,12 @@ class StreamBase(threading.Thread):
         self.prices = prices
         self.lock = lock
         self.log = LogWrapper(logname)
+    
+    def log_message(self, msg, error=False):
+        if error == True:
+            self.log.logger.error(msg)
+        else:            
+            self.log.logger.debug(msg)
 
 class PriceStream(StreamBase):
     def __init__(self, events, prices, lock: threading.Lock, logname) -> None:
@@ -47,6 +53,10 @@ class PriceStream(StreamBase):
         self.SECURE_HEADER = {
             "Authorization": f"Bearer {config['OANDA2']['API_KEY']}",
             "Content-Type": "application/json"}
+<<<<<<< HEAD
+=======
+
+>>>>>>> 577b610 (maci update)
         self.insts = prices.keys()
         print(self.insts)
         self.log = LogWrapper(logname)
@@ -57,6 +67,7 @@ class PriceStream(StreamBase):
             self.prices[live_price.instrument] = live_price
             self.on_data(live_price.instrument)
         except Exception as error:
+            self.log_message(f"Exception: {error}", error=True)
             self.log.logger.error(f"Exception in update_live_price {error}")
         finally:
             self.lock.release()
