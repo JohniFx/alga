@@ -11,7 +11,8 @@ import time
 
 
 from log_wrapper import LogWrapper
-instruments = ['EUR_USD', 'EUR_AUD', 'GBP_USD', 'USD_JPY', 'EUR_CAD']
+instruments = ['EUR_USD', 'EUR_AUD', 'GBP_USD', 'USD_JPY', 'EUR_CAD', 'AUD_USD', 'AUD_JPY', 'AUD_CAD', 'GBP_AUD',
+               'GBP_JPY','GBP_CAD','EUR_CHF', 'EUR_JPY']
 
 class LivePrice():
     def __init__(self, ob):
@@ -54,7 +55,7 @@ class PriceStream(StreamBase):
         self.insts = prices.keys()
         print(self.insts)
         self.log = LogWrapper(logname)
-    
+
     def update_live_price(self, live_price:LivePrice):
         try:
             self.lock.acquire()
@@ -62,7 +63,6 @@ class PriceStream(StreamBase):
             self.on_data(live_price.instrument)
         except Exception as error:
             self.log.logger.error(f"Exception in update_live_price {error}")
-            print("Exception in update_live_price", error)
         finally:
             self.lock.release()
 
@@ -79,7 +79,6 @@ class PriceStream(StreamBase):
             if p:
                 dp = json.loads(p.decode('utf-8'))
                 if 'type' in dp and dp['type'] == 'PRICE':
-                    print(LivePrice(dp))
                     self.update_live_price(LivePrice(dp))
 
 class PriceProcessor(StreamBase):
@@ -87,7 +86,7 @@ class PriceProcessor(StreamBase):
         super().__init__(events, prices, lock, logname)
         self.inst = inst
         self.work_queue = work_queue
-    
+
     def process_price(self):
         price = None
         try:
@@ -95,16 +94,15 @@ class PriceProcessor(StreamBase):
             price = copy.deepcopy(self.prices[self.inst])
         except Exception as error:
             self.log.logger.error(f"Exception in priceprocessor: {error}")
-            print(f"Exception in priceprocessor: {error}")
         finally:
             self.lock.release()
-        
+
         if price is None:
              self.log.logger.error("Price is none")
         print(f'  thread {self.ident} processing price:', price)
-        time.sleep(random.randint(2,5))
+        time.sleep(random.randint(2,7))
         print(f'  thread {self.ident} processing price complete', price)
-        if random.randint(2,5) == 3:
+        if random.randint(2,6) == 3:
             print(f'... NEW WORK added to workQueue')
             price.job = 'BUY'
             self.work_queue.put(price)
@@ -146,7 +144,7 @@ if __name__ == '__main__':
     ps.daemon = True
     threads.append(ps)
     ps.start()
- 
+
     wp = WorkProcessor(work_queue)
     wp.daemon = True
     threads.append(wp)
@@ -157,7 +155,7 @@ if __name__ == '__main__':
         t.daemon = True
         threads.append(t)
         t.start()
-    
+
     try:
         for t in threads:
             t.join()
