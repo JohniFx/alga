@@ -1,8 +1,10 @@
 #!/usr/bin/python3
 from cfg import Cfg
+from price_stream import PriceProcessor, PriceStream, WorkProcessor
 import trader
 import quant
 import threading
+from queue import Queue
 import time
 from datetime import datetime
 import utils as u
@@ -15,11 +17,15 @@ class Main(Cfg):
     def __init__(self) -> None:
         super().__init__()
         self.stats = Stat()
-        self.price_observers.append(self)
+        #observers
         self.transaction_observers.append(self)
         self.account_observers.append(self)
         time.sleep(4)
-
+        # threads
+        # price stream
+        # account polling
+        # transaction stream
+        # trading 
         self.t = trader.Trader(self)
         self.print_account()
         t1 = threading.Thread(target=self.update_kpi)
@@ -48,14 +54,6 @@ class Main(Cfg):
             n = 300 if h >= 22 or h <= 8 else 120
             time.sleep(n)
         self.restart()
-
-    def on_tick(self, cp):
-        # TODO: breakeven check
-        pass
-
-    def tick_breakeven(self, inst):
-        #get trade
-        pass
 
     def on_data_detailed(self, data):
         pass
@@ -122,8 +120,42 @@ class Main(Cfg):
                     return
         print('NO replacement winning trade(s)')
 
-    def on_account_changes(self):
-        pass
 
 if __name__ == '__main__':
+    threads = []
+
+    events = {}
+    shared_prices = {}
+    lock = threading.Lock()
+    work_queue = Queue()
+
+    insts = ['EUR_USD', 'GBP_USD', 'USD_JPY', 'AUD_USD', 'AUD_JPY']
+    for i in insts:
+        events[i] = threading.Event()
+        shared_prices[i] = {}
+    
+    # create pricestream
+    ps = PriceStream(events, shared_prices, lock, f"PriceStream_LOG")
+    ps.daemon = True
+    threads.append(ps)
+    ps.start()
+
+    wp = WorkProcessor(work_queue)
+    wp.daemon = True
+    threads.append(wp)
+    wp.start()
+
+    for i in insts:
+        t = PriceProcessor(events, shared_prices, lock, f"PriceProcessor_{i}_LOG",
+            i,
+            work_queue)
+        t.daemon = True
+        threads.append(t)
+        t.start()
+    
+    try:
+        for t in threads:
+            t.join()
+    except KeyboardInterrupt as error:
+        print('keyboard:', error)
     m = Main()

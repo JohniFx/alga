@@ -32,7 +32,6 @@ class Cfg(object):
         self.account_observers = []
         #
         self.account = self.get_account()
-        self.threads.append(threading.Thread(target=self.run_price_stream))
         self.threads.append(threading.Thread(target=self.run_transaction_stream))
         self.threads.append(threading.Thread(target=self.run_account_update))
         for t in self.threads:
@@ -82,10 +81,6 @@ class Cfg(object):
             be_level=3)
         return global_params
 
-    def notify_price_observers(self, cp):
-        for o in self.price_observers:
-            o.on_tick(cp)
-
     def notify_transaction_observers(self, data):
         for o in self.transaction_observers:
             o.on_data(data)
@@ -93,33 +88,6 @@ class Cfg(object):
     def notify_account_observers(self):
         for o in self.account_observers:
             o.on_account_changes()
-
-    def run_price_stream(self):
-        print('start price stream')
-        tradeinsts = ','.join(self.get_tradeable_instruments()[:20])
-        response = self.ctxs.pricing.stream(self.ACCOUNT_ID, instruments=tradeinsts)
-        try:
-            for typ, data in response.parts():
-                if typ == "pricing.ClientPrice":
-                    cp = dict(
-                        inst=data.instrument,
-                        bid=data.bids[0].price,
-                        ask=data.asks[0].price)
-                    self.notify_price_observers(cp)
-                    self.update_instrument(data)
-        except ValueError as e:
-            print('ValueError in pricestream', e)
-        except Exception as e:
-            print('Exception in price stream, RESTART', e)
-            time.sleep(5)
-            self.restart()
-
-    def update_instrument(self, data:dict):
-        self.instruments[data.instrument]['bid'] = data.bids[0].price
-        self.instruments[data.instrument]['ask'] = data.asks[0].price
-        self.instruments[data.instrument]['spread'] = round(
-                data.asks[0].price-data.bids[0].price,
-                self.instruments[data.instrument]['displayPrecision'])
 
     def run_transaction_stream(self):
         print('start transaction stream')
