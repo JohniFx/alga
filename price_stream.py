@@ -1,3 +1,5 @@
+from ast import Try
+from asyncio.log import logger
 from queue import Queue
 import random
 import threading
@@ -8,8 +10,7 @@ from dateutil import parser
 import copy
 import time
 from log_wrapper import LogWrapper
-instruments = ['EUR_USD', 'EUR_AUD', 'GBP_USD', 'USD_JPY', 'EUR_CAD', 'AUD_USD', 'AUD_JPY', 'AUD_CAD', 'GBP_AUD',
-               'GBP_JPY','GBP_CAD','EUR_CHF', 'EUR_JPY']
+instruments = ['EUR_USD', 'EUR_AUD', 'GBP_USD', 'EUR_JPY', 'EUR_CAD', 'EUR_GBP']
 
 class LivePrice():
     def __init__(self, ob):
@@ -46,46 +47,47 @@ class StreamBase(threading.Thread):
 class PriceStream(StreamBase):
     def __init__(self, events, prices, lock: threading.Lock, logname) -> None:
         super().__init__(events, prices, lock, logname)
-
         config = configparser.ConfigParser()
         config.read('config.ini')
         self.ACCOUNT_ID = config['OANDA2']['ACCOUNT_ID']
         self.SECURE_HEADER = {
             "Authorization": f"Bearer {config['OANDA2']['API_KEY']}",
             "Content-Type": "application/json"}
-<<<<<<< HEAD
-=======
-
->>>>>>> 577b610 (maci update)
         self.insts = prices.keys()
-        print(self.insts)
+        print(self.insts, self.ACCOUNT_ID, self.SECURE_HEADER)
         self.log = LogWrapper(logname)
 
     def update_live_price(self, live_price:LivePrice):
         try:
             self.lock.acquire()
             self.prices[live_price.instrument] = live_price
-            self.on_data(live_price.instrument)
+            self.set_event(live_price.instrument)
         except Exception as error:
             self.log_message(f"Exception: {error}", error=True)
-            self.log.logger.error(f"Exception in update_live_price {error}")
         finally:
             self.lock.release()
 
-    def on_data(self, instrument):
+    def set_event(self, instrument):
         if self.events[instrument].is_set() == False:
             self.events[instrument].set()
 
     def run(self):
         params = dict(instruments=','.join(self.insts))
         url = f"https://stream-fxpractice.oanda.com/v3/accounts/{self.ACCOUNT_ID}/pricing/stream"
-        resp = requests.get(url, params=params, headers=self.SECURE_HEADER, stream=True)
-
+        print(url, params)
+        try:
+            resp = requests.get(url, params=params, headers=self.SECURE_HEADER, stream=True)
+            print(resp)
+        except Exception as e:
+            self.log_message(f'request error:', e)
         for p in resp.iter_lines():
-            if p:
-                dp = json.loads(p.decode('utf-8'))
-                if 'type' in dp and dp['type'] == 'PRICE':
-                    self.update_live_price(LivePrice(dp))
+            if p: 
+                try:
+                    dp = json.loads(p.decode('utf-8'))                
+                    if 'type' in dp and dp['type'] == 'PRICE':
+                        self.update_live_price(LivePrice(dp))
+                except json.decoder.JSONDecodeError as e:
+                    self.log_message(f'json.decoder {e}')
 
 class PriceProcessor(StreamBase):
     def __init__(self, events, prices, lock, logname, inst, work_queue:Queue) -> None:
@@ -104,7 +106,10 @@ class PriceProcessor(StreamBase):
             self.lock.release()
 
         if price is None:
-             self.log.logger.error("Price is none")
+            print('PRICE IS NONE, or null')
+            self.log_message("No Price",True)
+            return
+
         print(f'  thread {self.ident} processing price:', price)
         time.sleep(random.randint(2,7))
         print(f'  thread {self.ident} processing complete {price}')
@@ -112,7 +117,6 @@ class PriceProcessor(StreamBase):
             print('new work added to queue')
             price.job = 'BUY'
             self.work_queue.put(price)
-
 
     def run(self):
         while True:
@@ -138,10 +142,16 @@ class WorkProcessor(threading.Thread):
                 time.sleep(4)
             print(f'completed item: {item.job} {item.instrument}')
 
-
+class TransactionStream(threading.Thread):
+    def __init__(self,tEvents, transactions, tran_lock, logname):
+        super().__init__()
+    
+    def run(self) -> None:
+        return super().run()
 
 if __name__ == '__main__':
-    import price_processor
+    threads = []
+
     events = {}
     prices = {}
     lock = threading.Lock()
@@ -150,7 +160,6 @@ if __name__ == '__main__':
     for i in instruments:
         events[i] = threading.Event()
         prices[i] = {}
-    threads = []
 
     ps = PriceStream(events, prices, lock, "PriceStream")
     ps.daemon = True
@@ -172,4 +181,4 @@ if __name__ == '__main__':
         for t in threads:
             t.join()
     except KeyboardInterrupt:
-        print('Keyboard interruptc')
+        print('Keyboard interrupt')

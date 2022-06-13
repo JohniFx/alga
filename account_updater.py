@@ -3,6 +3,8 @@ import threading
 import configparser
 import time
 #
+'''
+
 config = configparser.ConfigParser()
 config.read('config.ini')
 #
@@ -168,3 +170,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+'''
+print('commented out file')
