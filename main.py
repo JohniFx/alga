@@ -1,4 +1,6 @@
 #!/usr/bin/python3
+import queue
+from typing import Any
 from cfg import Cfg
 from price_stream import PriceProcessor, PriceStream, WorkProcessor
 import trader
@@ -38,11 +40,11 @@ class Main(Cfg):
         while True:
             q = quant.Quant(self)
             q.fetch_data()
-            q.fetch_data(tf='D', count='10')
+            q.fetch_data(tf='D', count=10)
             q.update_kpi_file()
             time.sleep(60*30)
 
-    def run_trading(self, n=120, iters=5):
+    def run_trading(self, n:int=120, iters:int=5):
         for i in range(iters):
             print(f'\n{u.get_now()} ITER: {i} of {iters}')
             self.t.manage_trading()
@@ -55,10 +57,7 @@ class Main(Cfg):
             time.sleep(n)
         self.restart()
 
-    def on_data_detailed(self, data):
-        pass
-
-    def on_data(self, data):
+    def on_data(self, data: Any):
         excluded = ['DAILY_FINANCING',
                     'STOP_LOSS_ORDER_REJECT',
                     'MARKET_ORDER_REJECT',
@@ -88,7 +87,7 @@ class Main(Cfg):
             msg += f" {data.units:.0f} PL:{data.pl}"
         print(msg)
 
-    def close_similar_trade(self, data):
+    def close_similar_trade(self, data:Any):
         # TODO: 
         if data.type != 'ORDER_FILL':
             return
@@ -124,10 +123,11 @@ class Main(Cfg):
 if __name__ == '__main__':
     threads = []
 
-    events = {}
+    pEvents = {}
     shared_prices = {}
-    lock = threading.Lock()
-    work_queue = Queue()
+    pLock = threading.Lock()
+    
+    work_queue  = Queue()
 
     insts = ['EUR_USD', 'GBP_USD', 'USD_JPY', 'AUD_USD', 'AUD_JPY']
     for i in insts:
@@ -135,27 +135,43 @@ if __name__ == '__main__':
         shared_prices[i] = {}
     
     # create pricestream
-    ps = PriceStream(events, shared_prices, lock, f"PriceStream_LOG")
+    ps = PriceStream(pEvents, shared_prices, pLock, "PriceStream_LOG")
     ps.daemon = True
     threads.append(ps)
     ps.start()
-
-    wp = WorkProcessor(work_queue)
-    wp.daemon = True
-    threads.append(wp)
-    wp.start()
-
-    for i in insts:
-        t = PriceProcessor(events, shared_prices, lock, f"PriceProcessor_{i}_LOG",
-            i,
-            work_queue)
-        t.daemon = True
-        threads.append(t)
-        t.start()
     
+    # create Transaction Stream
+    tr = TranasactionStream(tEvents, shared_transactions, tLock, "Transaction_LOG")
+    tr.daemon = True
+    threads.append(tr)
+    tr.start()
+
+    # Create Account update poll
+    ap = AccountPolling(aEvents, shared_account, aLock, "Account_LOG")
+    ap.daemon = True
+    threads.append(ap)
+    ap.start()
+
+    # wp = WorkProcessor(work_queue)
+    # wp.daemon = True
+    # threads.append(wp)
+    # wp.start()
+
+    # for i in insts:
+    #     trader is a priceprocessor
+    #     t = PriceProcessor(events, shared_prices, lock, f"PriceProcessor_{i}_LOG",
+    #         i,
+    #         work_queue)
+    #     t.daemon = True
+    #     threads.append(t)
+    #     t.start()
+
+    m = Main()
+
     try:
         for t in threads:
             t.join()
     except KeyboardInterrupt as error:
         print('keyboard:', error)
-    m = Main()
+
+    

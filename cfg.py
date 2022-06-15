@@ -16,8 +16,8 @@ class Cfg(object):
         config = configparser.ConfigParser()
         config.read('config.ini')
         #
-        API_KEY = config['OANDA2']['API_KEY']
-        self.ACCOUNT_ID = config['OANDA2']['ACCOUNT_ID']
+        API_KEY = config['OANDA']['API_KEY']
+        self.ACCOUNT_ID = config['OANDA']['ACCOUNT_ID']
         HOSTNAME = "api-fxpractice.oanda.com"
         STREAMHOST = "stream-fxpractice.oanda.com"
         key = f'Bearer {API_KEY}'
@@ -40,13 +40,6 @@ class Cfg(object):
         _insts_csv = ','.join(self.get_tradeable_instruments()[:20])
         _insts = self.ctx.account.instruments(self.ACCOUNT_ID, instruments=_insts_csv).get('instruments')
         self.instruments = {i.name: i.dict() for i in _insts}
-
-    def get_instruments():
-        # TODO: query from server
-        # save as json
-        # load from json
-        # check margin requirements
-        pass
 
     def restart(self):
         import os
@@ -113,7 +106,7 @@ class Cfg(object):
                 state = r.get('state')
                 _lastId = r.get('lastTransactionID')
                 self.update_account(changes, state)
-                self.notify_account_observers()
+                # self.notify_account_observers()
             except Exception as e:
                 print('Account update loop crashed', e)
                 time.sleep(60)
