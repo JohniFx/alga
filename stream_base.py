@@ -7,12 +7,11 @@ class StreamBase(threading.Thread):
 
     def __init__(self,
             events: dict[str, threading.Event], 
-            prices: dict[str, dict[str, Any]], 
             lock: threading.Lock, 
             logname: str) -> None:
         super().__init__()
         self.events = events
-        self.prices = prices
+       
         self.lock = lock
         self.log = LogWrapper(logname)
 
@@ -30,5 +29,5 @@ class StreamBase(threading.Thread):
             self.log.logger.debug(msg)
 
 if __name__ == '__main__':
-    sb = StreamBase({}, {}, threading.Lock(), 'StreamBase_LOG')
+    sb = StreamBase({},  threading.Lock(), 'StreamBase')
     print(sb)

@@ -19,4 +19,4 @@ class LivePrice():
         )
 
     def __repr__(self):
-        return f"LivePrice: {self.instrument} {self.ask} {self.bid} {self.time}"
+        return f"{self.instrument} {self.ask} {self.bid} {self.time}"

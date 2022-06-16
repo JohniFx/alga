@@ -1,4 +1,3 @@
-from concurrent.futures import thread
 from typing import Any
 from stream_base import StreamBase
 import requests
@@ -10,11 +9,13 @@ import json
 class PriceStream(StreamBase):
     def __init__(self,
             events: dict[str, threading.Event], 
-            prices: dict[str, Any], 
             lock: threading.Lock, 
-            logname: str) -> None:
-        super().__init__(events, prices, lock, logname)
+            logname: str,
+            prices: dict[str, Any] 
+            ) -> None:
+        super().__init__(events, lock, logname)
         self.insts = prices.keys()
+        self.prices = prices
 
     def update_live_price(self, live_price:LivePrice):
         try:
@@ -57,5 +58,5 @@ if __name__ == '__main__':
     for i in instruments:
         prices[i] = {}
     lock = threading.Lock()
-    ps = PriceStream(events,prices,lock, "PriceStream")
+    ps = PriceStream(events,lock, "PriceStream", prices)
     ps.start()
