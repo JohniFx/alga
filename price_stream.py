@@ -3,91 +3,19 @@ from asyncio.log import logger
 from queue import Queue
 import random
 import threading
-import configparser
+
 import requests
 import json
 from dateutil import parser
 import copy
 import time
-from log_wrapper import LogWrapper
+from utils.log_wrapper import LogWrapper
 instruments = ['EUR_USD', 'EUR_AUD', 'GBP_USD', 'EUR_JPY', 'EUR_CAD', 'EUR_GBP']
 
-class LivePrice():
-    def __init__(self, ob):
-        self.instrument = ob['instrument']
-        self.ask = float(ob['asks'][0]['price'])
-        self.bid = float(ob['bids'][0]['price'])
-        self.time= parser.parse(ob['time'])
-
-    def get_dict(self):
-        return dict(
-            instrument=self.instrument,
-            ask=self.ask,
-            bid=self.bid,
-            time=self.time
-        )
-
-    def __repr__(self):
-        return f"LivePrice: {self.instrument} {self.ask} {self.bid} {self.time}"
 
 class StreamBase(threading.Thread):
-    def __init__(self, events, prices, lock, logname) -> None:
-        super().__init__()
-        self.events = events
-        self.prices = prices
-        self.lock = lock
-        self.log = LogWrapper(logname)
-    
-    def log_message(self, msg, error=False):
-        if error == True:
-            self.log.logger.error(msg)
-        else:            
-            self.log.logger.debug(msg)
 
-class PriceStream(StreamBase):
-    def __init__(self, events, prices, lock: threading.Lock, logname) -> None:
-        super().__init__(events, prices, lock, logname)
-        config = configparser.ConfigParser()
-        config.read('config.ini')
-        self.ACCOUNT_ID = config['OANDA2']['ACCOUNT_ID']
-        self.SECURE_HEADER = {
-            "Authorization": f"Bearer {config['OANDA2']['API_KEY']}",
-            "Content-Type": "application/json"}
-        self.insts = prices.keys()
-        print(self.insts, self.ACCOUNT_ID, self.SECURE_HEADER)
-        self.log = LogWrapper(logname)
 
-    def update_live_price(self, live_price:LivePrice):
-        try:
-            self.lock.acquire()
-            self.prices[live_price.instrument] = live_price
-            self.set_event(live_price.instrument)
-        except Exception as error:
-            self.log_message(f"Exception: {error}", error=True)
-        finally:
-            self.lock.release()
-
-    def set_event(self, instrument):
-        if self.events[instrument].is_set() == False:
-            self.events[instrument].set()
-
-    def run(self):
-        params = dict(instruments=','.join(self.insts))
-        url = f"https://stream-fxpractice.oanda.com/v3/accounts/{self.ACCOUNT_ID}/pricing/stream"
-        print(url, params)
-        try:
-            resp = requests.get(url, params=params, headers=self.SECURE_HEADER, stream=True)
-            print(resp)
-        except Exception as e:
-            self.log_message(f'request error:', e)
-        for p in resp.iter_lines():
-            if p: 
-                try:
-                    dp = json.loads(p.decode('utf-8'))                
-                    if 'type' in dp and dp['type'] == 'PRICE':
-                        self.update_live_price(LivePrice(dp))
-                except json.decoder.JSONDecodeError as e:
-                    self.log_message(f'json.decoder {e}')
 
 class PriceProcessor(StreamBase):
     def __init__(self, events, prices, lock, logname, inst, work_queue:Queue) -> None:
@@ -110,11 +38,11 @@ class PriceProcessor(StreamBase):
             self.log_message("No Price",True)
             return
 
-        print(f'  thread {self.ident} processing price:', price)
+        print(f'thread {self.ident} processing price:', price)
         time.sleep(random.randint(2,7))
-        print(f'  thread {self.ident} processing complete {price}')
+        print(f'thread {self.ident} processing complete {price}')
         if random.randint(2,5) == 3:
-            print('new work added to queue')
+            print('  new work added to queue')
             price.job = 'BUY'
             self.work_queue.put(price)
 
@@ -134,13 +62,13 @@ class WorkProcessor(threading.Thread):
         while True:
             print(f'Queue Size: {self.work_queue.qsize()}')
             item = self.work_queue.get()
-            print(f'working on item: {item.job} {item.instrument}')
-            # self.log.logger.debug(f'new work: {item}')
+            print(f'.  working on item: {item.job} {item.instrument}')
+            self.log.logger.debug(f'new work: {item}')
             if self.work_queue.qsize()>100:
                 time.sleep(1)
             else:
                 time.sleep(4)
-            print(f'completed item: {item.job} {item.instrument}')
+            print(f'.  completed item: {item.job} {item.instrument}')
 
 class TransactionStream(threading.Thread):
     def __init__(self,tEvents, transactions, tran_lock, logname):
