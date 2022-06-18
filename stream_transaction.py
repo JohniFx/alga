@@ -7,13 +7,15 @@ class TransactionStream(StreamBase):
     def __init__(self,events,lock,logname  ): 
         super().__init__(events, lock, logname)
         
-    def on_data(self, trdata):
-        print(trdata)
+    def on_data(self, d):
+        print(f"{d['type']} {d.get('reason')} {d.get('instrument')} {d.get('units')} {d.get('price')} {d.get('pl')}")
 
 
     def run(self) -> None:
         print('start transaction stream')
         url = f"https://stream-fxpractice.oanda.com/v3/accounts/{self.ACCOUNT_ID}/transactions/stream"
+
+        resp = requests.Response()
         try:
             resp = requests.get(url, headers=self.SECURE_HEADER, stream=True)
         except Exception as e:
