@@ -6,9 +6,27 @@ from stream_base import StreamBase
 class TransactionStream(StreamBase):
     def __init__(self,events,lock,logname  ): 
         super().__init__(events, lock, logname)
+        self.lastTransactionID = 0
         
     def on_data(self, d):
-        print(f"{d['type']} {d.get('reason')} {d.get('instrument')} {d.get('units')} {d.get('price')} {d.get('pl')}")
+        
+        if d['type'] == 'HEARTBEAT':
+            if self.lastTransactionID != d.get('lastTransactionID'):
+                print(f"{d['type']} {d.get('lastTransactionID')} {d.get('time')}")
+                self.lastTransactionID = d.get('lastTransactionID')
+        elif d['type']== 'MARKET_ORDER':
+            print(f"{d['type']} {d.get('reason')} {d.get('instrument')} {d.get('units')} {d.get('stopLossOnFill')}")
+        elif d['type']== 'ORDER_FILL':
+            print(f"{d['type']} {d.get('reason')} {d.get('instrument')} {d.get('units')} {d.get('price')} {d.get('pl')}")
+        elif d['type'] in ['TAKE_PROFIT_ORDER','STOP_LOSS_ORDER', 'TRAILING_STOP_LOSS_ORDER']:
+            print(f"{d['type']} {d.get('reason')} {d.get('instrument')} {d.get('tradeID')} {d.get('distance')} {d.get('pl')}")
+        elif d['type'] == 'ORDER_CANCEL' and d['type'] == 'LINKED_TRADE_CLOSED':
+            pass
+        elif d['type'] == 'DAILY_FINANCING':
+            print(f"{d['type']} {d['financing']}")
+        else:
+            print(d)
+            print('')
 
 
     def run(self) -> None:

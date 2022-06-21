@@ -20,7 +20,7 @@ class PriceStream(StreamBase):
     def update_live_price(self, live_price:LivePrice):
         try:
             self.lock.acquire()
-            print(live_price)
+            #print(live_price)
             self.prices[live_price.instrument] = live_price
             self.set_event(live_price.instrument)
         except Exception as error:
@@ -39,7 +39,7 @@ class PriceStream(StreamBase):
             resp = requests.get(url, params=params, headers=self.SECURE_HEADER, stream=True)
         except Exception as e:
             self.log_message(f'request error: {e}')
-
+        print('Price Streaming starts...')
         for p in resp.iter_lines():
             if p: 
                 try:

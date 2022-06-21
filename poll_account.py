@@ -26,25 +26,25 @@ class AccountPolling(threading.Thread):
         self.update_trades(state)
         self.update_positions(state)
         self.update_orders(state)
-        
+    
     def run(self) -> None:
         _lastId = self.account.lastTransactionID
         i = 0
 
         while True:
             try:
-                time.sleep(20)
                 r = self.ctx.account.changes(self.account_id, sinceTransactionID=_lastId)
                 changes = r.get('changes')
                 state = r.get('state')
                 _lastId = r.get('lastTransactionID')
                 self.update_account(changes, state)
-                print(i, account.NAV, account.balance, len(account.trades))
+                print(f'#{i:>3}: {self.account.NAV:.2f} {self.account.unrealizedPL}')
                 i+=1
+                time.sleep(20)
             except v20.errors.V20Timeout as e:
-                print(e)
+                print('account error: ',e)
             except Exception as e:
-                print(e)
+                print('account error: ',e)
     
     def apply_changes(self, changes: v20.account.AccountChanges):
         # Trades Opened
