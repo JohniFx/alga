@@ -27,17 +27,22 @@ class AccountPolling(threading.Thread):
         self.update_positions(state)
         self.update_orders(state)
     
+    def get_account_changes(self):
+        r = self.ctx.account.changes(
+                    self.account_id, 
+                    sinceTransactionID=self.account.lastTransactionID)
+        changes = r.get('changes')
+        state = r.get('state')
+        self.account.lastTransactionID = r.get('lastTransactionID')
+        self.update_account(changes, state)
+        print(f'NAV: {self.account.NAV:.2f} uPL:{self.account.unrealizedPL} opentrades: {self.account.openTradeCount}')
+        
     def run(self) -> None:
-        _lastId = self.account.lastTransactionID
         i = 0
 
         while True:
-            try:
-                r = self.ctx.account.changes(self.account_id, sinceTransactionID=_lastId)
-                changes = r.get('changes')
-                state = r.get('state')
-                _lastId = r.get('lastTransactionID')
-                self.update_account(changes, state)
+            try: 
+                self.get_account_changes()
                 print(f'#{i:>3}: {self.account.NAV:.2f} {self.account.unrealizedPL}')
                 i+=1
                 time.sleep(20)

@@ -15,15 +15,20 @@ class TransactionStream(StreamBase):
                 print(f"{d['type']} {d.get('lastTransactionID')} {d.get('time')}")
                 self.lastTransactionID = d.get('lastTransactionID')
         elif d['type']== 'MARKET_ORDER':
-            print(f"{d['type']} {d.get('reason')} {d.get('instrument')} {d.get('units')} {d.get('stopLossOnFill')}")
+            return
+            #print(f"{d['type']} {d.get('reason')} {d.get('instrument')} {d.get('units')} {d.get('stopLossOnFill')}")
         elif d['type']== 'ORDER_FILL':
             print(f"{d['type']} {d.get('reason')} {d.get('instrument')} {d.get('units')} {d.get('price')} {d.get('pl')}")
         elif d['type'] in ['TAKE_PROFIT_ORDER','STOP_LOSS_ORDER', 'TRAILING_STOP_LOSS_ORDER']:
-            print(f"{d['type']} {d.get('reason')} {d.get('instrument')} {d.get('tradeID')} {d.get('distance')} {d.get('pl')}")
+            print(f". {d['type']} {d.get('reason')} {d.get('tradeID')} {d.get('distance')} {d.get('pl')}")
         elif d['type'] == 'ORDER_CANCEL' and d['type'] == 'LINKED_TRADE_CLOSED':
-            pass
+            return
         elif d['type'] == 'DAILY_FINANCING':
             print(f"{d['type']} {d['financing']}")
+        elif d['type'] =='ORDER_CANCEL':
+            if d['reason'] == 'LINKED_TRADE_CLOSED':
+                return
+            print(d)
         else:
             print(d)
             print('')

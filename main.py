@@ -60,17 +60,18 @@ class Main():
         self.account = self.ctx.account.get(self.account_id).get('account')
         aEvent = threading.Event()
         aLock = threading.Lock()
-        ap = AccountPolling(self.account, aEvent, aLock, "Account", self.ctx)
-        ap.daemon = True
-        self._threads.append(ap)
+        self.ap = AccountPolling(self.account, aEvent, aLock, "Account", self.ctx)
+        #ap.daemon = True
+        #self._threads.append(ap)
 
         # start threads
         for t in self._threads:
             t.start()
 
-    def start_trading(self, n:int=120, iters:int=5):
+    def start_trading(self, n:int=120, iters:int=100):
         for i in range(iters):
             print(f'\nITER: {i} of {iters}')
+            self.ap.get_account_changes()
             t = Trader(self.ctx, self.account, self.instruments, self.prices)      
             t.start()
             t.join()
@@ -185,6 +186,7 @@ if __name__ == '__main__':
     m = Main()
     m.start_threads()
     m.start_trading()
+    m.print_account()
 
 
     try:

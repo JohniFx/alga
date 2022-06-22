@@ -65,9 +65,8 @@ class Trader(threading.Thread):
       
         if self.prices[trade.instrument] == {}:
             print('price still empty')
-        else:
-            print(f'live price: {type(self.prices[trade.instrument])}', self.prices[trade.instrument])
-            print('')
+            return
+
         if trade.currentUnits > 0:
             # TODO: lock, get, unlock
             price = self.prices[trade.instrument].bid
@@ -161,7 +160,7 @@ class Trader(threading.Thread):
         self.check_instrument(p.instrument, pos)
 
     def check_instrument(self, inst: str, pos: int = 0):
-        print(f'{inst} check. pos: {pos}')
+        print(f'{inst} pos: {pos}')
         if not self.check_spread(inst):
             return
         signal = self.get_signal(inst, pos)
