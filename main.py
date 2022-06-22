@@ -10,43 +10,77 @@ from configparser import ConfigParser
 import v20
 from poll_account import AccountPolling
 from stream_transaction import TransactionStream
+from stream_price import PriceStream
+import json
 
 class Main():
     _threads = []
 
     def __init__(self) -> None:
         super().__init__()
-        self.ctx = self.get_connection()
+        self.ctx = self.get_context()
         self.stats = Stat()
-        
-        
+        self.params = self.load_params()
+        self.instruments = self.get_instruments()
+
+    def load_params(self):
+        with open('params.json') as json_file:
+            p = json.load(json_file)
+        return p
+
+    def save_all_instruments(self):
+        insts = {i.name : i.dict() for i in self.ctx.account.instruments(self.account_id).get('instruments')}
+        with open('instruments.json', 'w') as outfile:
+            json.dump(insts, outfile, indent=4)
+
+    def load_all_instruments(self):
+        with open('instruments.json') as json_file:
+            insts = json.load(json_file)
+        return insts
+
+    def start_threads(self):
+        # Price Stream
+        pEvents = {}
+        self.prices = {}
+        for i in self.instruments.keys():
+            self.prices[i] = {}
+        pLock = threading.Lock()
+        ps = PriceStream(pEvents,pLock, "PriceStream", self.prices)
+        ps.daemon = True
+        self._threads.append(ps)
+
         # Transaction
         tEvents = threading.Event()
         tLock = threading.Lock()
         tr = TransactionStream(tEvents, tLock, "Transaction")
+        tr.daemon = True
         self._threads.append(tr)
 
         # Account
         self.account = self.ctx.account.get(self.account_id).get('account')
         aEvent = threading.Event()
         aLock = threading.Lock()
-        ap = AccountPolling(self.account, aEvent, aLock, "Account", self.ctx)
-        ap.daemon = True
-        self._threads.append(ap)
+        self.ap = AccountPolling(self.account, aEvent, aLock, "Account", self.ctx)
+        #ap.daemon = True
+        #self._threads.append(ap)
 
         # start threads
         for t in self._threads:
             t.start()
 
-        insts = self.get_instruments()
-        time.sleep(2)
-        # Trader
-        Trader(self.ctx, self.account, insts).manage_trading()
-        
-        time.sleep(30)
-        Trader(self.ctx, self.account, insts).manage_trading()
+    def start_trading(self, n:int=120, iters:int=100):
+        for i in range(iters):
+            print(f'\nITER: {i} of {iters}')
+            self.ap.get_account_changes()
+            t = Trader(self.ctx, self.account, self.instruments, self.prices)      
+            t.start()
+            t.join()
+            self.stats.show()
+            h = datetime.now().hour
+            n = 300 if h >= 22 or h <= 8 else 120
+            time.sleep(n)
 
-    def get_connection(self):
+    def get_context(self):
         config = ConfigParser()
         config.read('config.ini')
         API_KEY = config['OANDA']['API_KEY']
@@ -58,19 +92,11 @@ class Main():
         return ctx   
 
     def get_instruments(self):
-        # insts_csv = ','.join(self.get_tradeable_instruments()[:20])
-        insts_csv = 'EUR_USD,GBP_USD,AUD_USD,CAD_JPY,EUR_JPY,AUD_CAD,AUD_SGD'
-        insts = self.ctx.account.instruments(self.account.id, instruments=insts_csv).get('instruments')
+        resp = self.ctx.account.instruments(
+            self.account_id, 
+            instruments=self.params['tradeable_instruments'])
+        insts = resp.get('instruments')
         return {i.name: i.dict() for i in insts}
-
-    def run_trading(self, n:int=120, iters:int=5):
-        for i in range(iters):
-            print(f'\n{u.get_now()} ITER: {i} of {iters}')
-            self.t.manage_trading()
-            self.stats.show()
-            h = datetime.now().hour
-            n = 300 if h >= 22 or h <= 8 else 120
-            time.sleep(n)
 
     def on_data(self, data: Any):
         excluded = ['DAILY_FINANCING',
@@ -140,6 +166,13 @@ class Main():
         print(f'\n{u.get_now()} RESTART\n')
         os.execv('./main.py', sys.argv)
     
+    def get_position_count(self) -> int:
+        c = 0
+        for p in self.account.positions:
+            if p.marginUsed is not None:
+                c+=1
+        return c    
+    
     def print_account(self):
         ac = self.account
         print(f" ",
@@ -151,6 +184,11 @@ class Main():
 
 if __name__ == '__main__':
     m = Main()
+    m.start_threads()
+    m.start_trading()
+    m.print_account()
+
+
     try:
         for t in m._threads:
             t.join()

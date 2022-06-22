@@ -143,7 +143,7 @@ class Quant():
         try:
             df['lr_slope'] = 1 if slope > 0 else -1
         except TypeError as te:
-            print('exception', te)
+            print('exception add_kpi', te)
 
     def add_hilo(self, df):
         df['lows'] = np.sign(df.mid_l-df.mid_l.shift(1))

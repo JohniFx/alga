@@ -1,14 +1,21 @@
+from typing import Iterable
 import quant
 import datetime
 import v20
+import threading
  
 
-class Trader():
-    def __init__(self, ctx, account, insts) -> None:
+class Trader(threading.Thread):
+    def __init__(self, ctx, account, insts, prices) -> None:
+        super().__init__()
         self.ctx = ctx
         self.account = account
         self.instruments = insts
+        self.prices = prices
         self.initial_tradecheck()
+
+    def run(self) -> None:
+        self.manage_trading()
 
     def manage_trading(self):
         if self.account.unrealizedPL > 35:
@@ -24,8 +31,11 @@ class Trader():
 
     def manage_trade(self, t:v20.trade.TradeSummary):
         sl = self.get_order_by_id(t.stopLossOrderID)
-        ts = self.get_order_by_id(t.trailingStopLossOrderID)
-        print(t.instrument, f'{t.currentUnits:>5.0f} PL:{t.unrealizedPL:>6.2f} E: {t.price:>8.4f} sl: {sl.price:>8.4f} ts:{ts.trailingStopValue}')
+        trailingStopValue = ''
+        if t.trailingStopLossOrderID is not None:
+            ts = self.get_order_by_id(t.trailingStopLossOrderID)
+            trailingStopValue = ts.trailingStopValue
+        print(t.instrument, f'{t.currentUnits:>5.0f} PL:{t.unrealizedPL:>6.2f} E: {t.price:>8.4f} sl: {sl.price:>8.4f} ts:{trailingStopValue}')
         if t.unrealizedPL < 0:
             return
         self.trade_breakeven(t)
@@ -51,23 +61,29 @@ class Trader():
 
         be_trigger_offset = self.get_global_params()['be_trigger'] * pow(10, self.get_piploc(trade.instrument))
         be_level_offset   = self.get_global_params()['be_level']   * pow(10, self.get_piploc(trade.instrument))
+        # print(self.instruments[trade.instrument])
+      
+        if self.prices[trade.instrument] == {}:
+            print('price still empty')
+            return
 
         if trade.currentUnits > 0:
             # TODO: lock, get, unlock
-            price = self.instruments[trade.instrument]['bid']
+            price = self.prices[trade.instrument].bid
             if price > (trade.price + be_trigger_offset):
                 sl_price = trade.price + be_level_offset
                 self.set_stoploss(trade, sl_price)
                 
 
         if trade.currentUnits < 0:
-            price = self.instruments[trade.instrument]['ask']
+            price = self.prices[trade.instrument].ask
             if price < (trade.price - be_trigger_offset):
                 sl_price = trade.price - be_level_offset
                 self.set_stoploss(trade, sl_price)
 
     def trade_scalein(self, t: v20.trade.TradeSummary):
-        sl = self.get_order_by_id(t.stopLossOrderID)
+        if t.stopLossOrderID is not None:
+            sl = self.get_order_by_id(t.stopLossOrderID)
         if t.currentUnits > 0 and (sl.price > t.price):
             self.check_instrument(t.instrument, 1)
         if t.currentUnits < 0 and (sl.price < t.price):
@@ -144,7 +160,7 @@ class Trader():
         self.check_instrument(p.instrument, pos)
 
     def check_instrument(self, inst: str, pos: int = 0):
-        print(f'{inst} check. pos: {pos}')
+        print(f'{inst} pos: {pos}')
         if not self.check_spread(inst):
             return
         signal = self.get_signal(inst, pos)
@@ -229,7 +245,6 @@ class Trader():
             for b in response.body:
                 print(response.get(b))
                 print('')
-        return id
 
     def place_limit(self, inst, units, entryPrice, stopPrice, profitPrice):
         prec = self.instruments[inst]['displayPrecision']
@@ -312,14 +327,7 @@ class Trader():
                     print('Close trade without stop')
                     self.close_trade(t)
 
-    def get_position_count(self) -> int:
-        c = 0
-        for p in self.account.positions:
-            if p.marginUsed is not None:
-                c+=1
-        return c
-
-    def get_positions(self) -> list:
+    def get_positions(self) -> Iterable:
         for p in self.account.positions:
             if p.marginUsed is not None:
                 yield p
@@ -331,17 +339,17 @@ class Trader():
                     return p
         return None
 
-    def get_trades_by_instrument(self, inst) ->list:
+    def get_trades_by_instrument(self, inst) -> Iterable:
         for t in self.account.trades:
             if t.instrument == inst:
                 yield t
 
-    def get_trade_by_id(self, tradeid: int) -> v20.trade.TradeSummary:
+    def get_trade_by_id(self, tradeid: int) -> v20.trade.TradeSummary:  # type: ignore
         for t in self.account.trades:
             if t.id == tradeid:
                 return t
 
-    def get_order_by_id(self, orderid: int) -> v20.order.Order:
+    def get_order_by_id(self, orderid: int) -> v20.order.Order:  # type: ignore
         for o in self.account.orders:
             if o.id == orderid:
                 return o
@@ -349,12 +357,8 @@ class Trader():
     def get_piploc(self, inst):
         return self.instruments[inst]['pipLocation']
 
-    def get_global_params(self):
-        global_params = dict(
-            tp=55,
-            sl=12,
-            ts=12,
-            max_spread=3,
-            be_trigger=10,
-            be_level=3)
-        return global_params
+    def get_global_params(self): 
+        import json
+        with open('params.json') as json_file:
+            p = json.load(json_file)
+        return p
