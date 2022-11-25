@@ -11,7 +11,6 @@ class StreamBase(threading.Thread):
             logname: str) -> None:
         super().__init__()
         self.events = events
-       
         self.lock = lock
         self.log = LogWrapper(logname)
 
